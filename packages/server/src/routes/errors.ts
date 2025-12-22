@@ -46,21 +46,24 @@ router.get('/errors', (req, res) => {
 
     const result = db.exec(sql, params);
     
+    // 表结构: id, dsn, type, message, normalized_message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, first_seen, fingerprint, count, created_at
     const list = result.length > 0 ? result[0].values.map((row) => ({
       id: row[0],
       dsn: row[1],
       type: row[2],
       message: row[3],
-      stack: row[4],
-      filename: row[5],
-      lineno: row[6],
-      colno: row[7],
-      url: row[8],
-      breadcrumbs: row[9] ? JSON.parse(row[9] as string) : [],
-      timestamp: row[10],
-      fingerprint: row[11],
-      count: row[12],
-      createdAt: row[13]
+      normalizedMessage: row[4],
+      stack: row[5],
+      filename: row[6],
+      lineno: row[7],
+      colno: row[8],
+      url: row[9],
+      breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
+      timestamp: row[11],
+      firstSeen: row[12],
+      fingerprint: row[13],
+      count: row[14],
+      createdAt: row[15]
     })) : [];
 
     res.json({ total, list, page: Number(page), pageSize: Number(pageSize) });
@@ -88,21 +91,24 @@ router.get('/errors/:id', async (req, res) => {
     }
 
     const row = result[0].values[0];
+    // 表结构: id, dsn, type, message, normalized_message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, first_seen, fingerprint, count, created_at
     const error = {
       id: row[0],
       dsn: row[1] as string,
       type: row[2],
       message: row[3],
-      stack: row[4] as string | null,
-      filename: row[5],
-      lineno: row[6],
-      colno: row[7],
-      url: row[8],
-      breadcrumbs: row[9] ? JSON.parse(row[9] as string) : [],
-      timestamp: row[10],
-      fingerprint: row[11],
-      count: row[12],
-      createdAt: row[13],
+      normalizedMessage: row[4],
+      stack: row[5] as string | null,
+      filename: row[6],
+      lineno: row[7],
+      colno: row[8],
+      url: row[9],
+      breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
+      timestamp: row[11],
+      firstSeen: row[12],
+      fingerprint: row[13],
+      count: row[14],
+      createdAt: row[15],
       parsedStack: null as unknown
     };
 

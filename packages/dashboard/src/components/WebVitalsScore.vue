@@ -166,7 +166,8 @@ function getValue(key: string): number | undefined {
 
 <style scoped>
 .web-vitals {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 20px;
 }
@@ -178,14 +179,14 @@ function getValue(key: string): number | undefined {
 }
 .vital-card {
   padding: 20px;
-  background: #f8fafc;
+  background: var(--bg);
   border-radius: 8px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   transition: all 0.2s;
 }
 .vital-card:hover {
-  border-color: #6366f1;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 .vital-header {
   display: flex;
@@ -201,11 +202,11 @@ function getValue(key: string): number | undefined {
 .vital-abbr {
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text);
 }
 .vital-full {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .vital-score {
   padding: 4px 10px;
@@ -217,12 +218,12 @@ function getValue(key: string): number | undefined {
 .vital-value {
   font-size: 32px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text);
   margin-bottom: 8px;
 }
 .vital-description {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 16px;
 }
 .vital-thresholds {
@@ -242,7 +243,7 @@ function getValue(key: string): number | undefined {
 }
 .threshold-text {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .overall-score {
   padding: 20px;

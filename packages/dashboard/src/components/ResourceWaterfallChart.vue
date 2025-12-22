@@ -94,7 +94,8 @@ function getFileName(url: string) {
 
 <style scoped>
 .waterfall {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -103,11 +104,11 @@ function getFileName(url: string) {
   grid-template-columns: 2fr 1fr 1fr 3fr;
   gap: 12px;
   padding: 12px 16px;
-  background: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--bg);
+  border-bottom: 2px solid var(--border);
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 .waterfall-body {
@@ -119,25 +120,26 @@ function getFileName(url: string) {
   grid-template-columns: 2fr 1fr 1fr 3fr;
   gap: 12px;
   padding: 10px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
   align-items: center;
 }
 .waterfall-row:hover {
-  background: #f8fafc;
+  background: var(--bg);
 }
 .col-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #1e293b;
+  color: var(--text);
 }
 .cached-badge {
   display: inline-block;
   padding: 2px 6px;
   margin-left: 6px;
-  background: #dbeafe;
-  color: #1e40af;
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 3px;
   font-size: 10px;
   font-weight: 600;
@@ -151,13 +153,14 @@ function getFileName(url: string) {
   font-weight: 600;
 }
 .col-size {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 .timeline-track {
   position: relative;
   height: 20px;
-  background: #f1f5f9;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
 }
 .timeline-bar {

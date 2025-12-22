@@ -86,18 +86,43 @@ function formatTime(timestamp: number) {
 
 <style scoped>
 .card {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   margin-bottom: 24px;
 }
 .card-body { padding: 20px; }
-.empty { text-align: center; color: #64748b; padding: 40px; }
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-.table th { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; }
-.table tr:hover { background: #f8fafc; }
-.msg-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { 
+  text-align: center; 
+  color: var(--text-secondary); 
+  padding: 40px; 
+}
+.table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  font-size: 14px; 
+}
+.table th, .table td { 
+  padding: 12px; 
+  text-align: left; 
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.table th { 
+  font-weight: 600; 
+  color: var(--text-secondary); 
+  font-size: 12px; 
+  text-transform: uppercase; 
+}
+.table tr:hover { 
+  background: var(--bg);
+}
+.msg-cell { 
+  max-width: 300px; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
+}
 .badge {
   display: inline-block;
   padding: 2px 8px;
@@ -105,19 +130,29 @@ function formatTime(timestamp: number) {
   font-size: 11px;
   font-weight: 600;
 }
-.badge-error { background: #fef2f2; color: #dc2626; }
-.badge-count { background: #f0f9ff; color: #0369a1; }
+.badge-error { 
+  background: rgba(239, 68, 68, 0.1); 
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.badge-count { 
+  background: rgba(99, 102, 241, 0.1); 
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
 .btn {
   padding: 6px 12px;
   font-size: 12px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  background: #6366f1;
+  background: var(--primary);
   color: white;
   transition: all 0.2s;
 }
-.btn:hover { opacity: 0.9; }
+.btn:hover { 
+  background: var(--primary-dark);
+}
 .pagination {
   display: flex;
   justify-content: center;
@@ -125,27 +160,28 @@ function formatTime(timestamp: number) {
   gap: 16px;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 }
 .page-btn {
   padding: 8px 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--bg);
+  color: var(--text);
   cursor: pointer;
   transition: all 0.2s;
 }
 .page-btn:hover:not(:disabled) {
-  background: #6366f1;
+  background: var(--primary);
   color: white;
-  border-color: #6366f1;
+  border-color: var(--primary);
 }
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .page-info {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 </style>

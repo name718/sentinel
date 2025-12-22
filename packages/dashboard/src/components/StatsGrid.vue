@@ -33,13 +33,18 @@ defineProps<{
   margin-bottom: 24px;
 }
 .stat-card {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 .stat-icon {
   width: 48px;
@@ -50,6 +55,13 @@ defineProps<{
   justify-content: center;
   font-size: 24px;
 }
-.stat-value { font-size: 28px; font-weight: 700; color: #1e293b; }
-.stat-label { font-size: 13px; color: #64748b; }
+.stat-value { 
+  font-size: 28px; 
+  font-weight: 700; 
+  color: var(--text);
+}
+.stat-label { 
+  font-size: 13px; 
+  color: var(--text-secondary);
+}
 </style>

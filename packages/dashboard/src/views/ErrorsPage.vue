@@ -54,17 +54,18 @@ defineEmits<{
 
 <style scoped>
 .page-title { 
-  font-size: 24px; 
+  font-size: 28px;
+  font-weight: 700;
   margin-bottom: 24px; 
-  color: #1e293b; 
+  color: var(--text);
 }
 .result-info {
   margin-bottom: 16px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 .result-info strong {
-  color: #6366f1;
+  color: var(--primary);
   font-weight: 600;
 }
 </style>

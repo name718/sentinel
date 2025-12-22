@@ -145,9 +145,10 @@ function closeDetail() {
 
 <style scoped>
 .page-title { 
-  font-size: 24px; 
+  font-size: 28px;
+  font-weight: 700;
   margin-bottom: 24px; 
-  color: #1e293b; 
+  color: var(--text);
 }
 .toolbar { 
   margin-bottom: 16px; 
@@ -160,36 +161,63 @@ function closeDetail() {
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
-  background: #6366f1;
+  background: var(--primary);
   color: white;
   transition: all 0.2s;
 }
-.btn:hover { opacity: 0.9; }
+.btn:hover { 
+  background: var(--primary-dark);
+}
 .btn-sm {
   padding: 6px 12px;
   font-size: 12px;
-  background: #6366f1;
+  background: var(--primary);
   color: white;
+  border: none;
+  border-radius: 6px;
+}
+.btn-sm:hover {
+  background: var(--primary-dark);
 }
 .card {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   margin-bottom: 24px;
 }
 .card-body { padding: 20px; }
-.empty { text-align: center; color: #64748b; padding: 40px; }
-.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-.table th { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; }
-.table tr:hover { background: #f8fafc; }
+.empty { 
+  text-align: center; 
+  color: var(--text-secondary); 
+  padding: 40px; 
+}
+.table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  font-size: 14px; 
+}
+.table th, .table td { 
+  padding: 12px; 
+  text-align: left; 
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.table th { 
+  font-weight: 600; 
+  color: var(--text-secondary); 
+  font-size: 12px; 
+  text-transform: uppercase; 
+}
+.table tr:hover { 
+  background: var(--bg);
+}
 .url-cell { 
   max-width: 200px; 
   overflow: hidden; 
   text-overflow: ellipsis; 
   white-space: nowrap; 
   font-size: 12px; 
-  color: #64748b; 
+  color: var(--text-secondary); 
 }
 .modal-overlay {
   position: fixed;
@@ -197,7 +225,7 @@ function closeDetail() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,7 +233,8 @@ function closeDetail() {
   padding: 20px;
 }
 .modal-large {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 12px;
   width: 95%;
   max-width: 1400px;
@@ -216,18 +245,26 @@ function closeDetail() {
 }
 .modal-header {
   padding: 20px 24px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.modal-header h2 { font-size: 20px; margin: 0; }
+.modal-header h2 { 
+  font-size: 20px; 
+  margin: 0;
+  color: var(--text);
+}
 .modal-close {
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+.modal-close:hover {
+  color: var(--text);
 }
 .modal-body { 
   padding: 24px; 
@@ -239,7 +276,7 @@ function closeDetail() {
 .detail-section h3 {
   font-size: 18px;
   margin-bottom: 16px;
-  color: #1e293b;
+  color: var(--text);
 }
 .metrics-grid {
   display: grid;
@@ -248,18 +285,19 @@ function closeDetail() {
 }
 .metric-item {
   padding: 16px;
-  background: #f8fafc;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   text-align: center;
 }
 .metric-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 .metric-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text);
 }
 </style>

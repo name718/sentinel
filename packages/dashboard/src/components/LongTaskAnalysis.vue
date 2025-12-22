@@ -131,7 +131,8 @@ function getSeverityColor(severity: string): string {
 
 <style scoped>
 .long-task-analysis {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 20px;
 }
@@ -143,19 +144,20 @@ function getSeverityColor(severity: string): string {
 }
 .stat-item {
   padding: 16px;
-  background: #f8fafc;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   text-align: center;
 }
 .stat-label {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text);
 }
 .task-list {
   margin-bottom: 24px;
@@ -165,28 +167,36 @@ function getSeverityColor(severity: string): string {
   grid-template-columns: 1fr 2fr 1fr 1fr;
   gap: 12px;
   padding: 12px;
-  background: #f8fafc;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 6px 6px 0 0;
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 .task-body {
   max-height: 300px;
   overflow-y: auto;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
 }
 .task-row {
   display: grid;
   grid-template-columns: 1fr 2fr 1fr 1fr;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
   align-items: center;
+  color: var(--text);
+}
+.task-row:last-child {
+  border-bottom: none;
 }
 .task-row:hover {
-  background: #f8fafc;
+  background: var(--bg);
 }
 .duration-bar-container {
   position: relative;
@@ -201,7 +211,7 @@ function getSeverityColor(severity: string): string {
 }
 .duration-text {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text);
 }
 .severity-badge {
   display: inline-block;
@@ -213,17 +223,17 @@ function getSeverityColor(severity: string): string {
 }
 .recommendations {
   padding: 16px;
-  background: #fffbeb;
-  border-left: 4px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 4px solid var(--warning);
   border-radius: 6px;
 }
 .recommendations h4 {
   margin-bottom: 12px;
-  color: #92400e;
+  color: var(--text);
 }
 .recommendations ul {
   margin-left: 20px;
-  color: #78350f;
+  color: var(--text-secondary);
 }
 .recommendations li {
   margin-bottom: 8px;

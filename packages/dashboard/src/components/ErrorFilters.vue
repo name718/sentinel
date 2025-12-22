@@ -55,31 +55,46 @@ defineEmits<{
 .search-input, .filter-select {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
-  background: #ffffff;
+  background: var(--bg);
+  color: var(--text);
+  transition: all 0.2s;
+}
+.search-input::placeholder {
+  color: var(--text-secondary);
 }
 .search-input:focus, .filter-select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--primary);
+  background: var(--bg-light);
 }
 .btn {
   padding: 10px 16px;
-  border: none;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg);
+  color: var(--text);
   transition: all 0.2s;
   white-space: nowrap;
 }
-.btn:hover { background: #f1f5f9; }
+.btn:hover { 
+  background: var(--bg-lighter);
+  border-color: var(--bg-lighter);
+}
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.btn-primary { background: #6366f1; color: white; border: none; }
-.btn-primary:hover { opacity: 0.9; background: #6366f1; }
+.btn-primary { 
+  background: var(--primary); 
+  color: white; 
+  border: none; 
+}
+.btn-primary:hover { 
+  background: var(--primary-dark);
+}
 </style>

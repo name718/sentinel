@@ -69,13 +69,13 @@ onMounted(() => {
 
 <template>
   <div class="dashboard">
-    <Sidebar :activeTab="activeTab" @update:activeTab="activeTab = $event" />
+    <Sidebar :activeTab="activeTab" @update:activeTab="(tab) => activeTab = tab as typeof activeTab" />
     
     <div class="main-content">
       <TopBar 
         :timeRange="timeRange" 
         :dsn="DSN"
-        @update:timeRange="timeRange = $event" 
+        @update:timeRange="(range) => timeRange = range as typeof timeRange" 
       />
       
       <div class="page-content">

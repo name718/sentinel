@@ -1,3 +1,98 @@
+/**
+ * @file PerformanceMonitor 性能监控模块
+ * @description 采集页面性能指标，包括加载时间和运行时性能
+ * 
+ * ## 功能职责
+ * - 采集 Web Vitals 核心指标（FP、FCP、LCP）
+ * - 采集导航时间（TTFB、DOM Ready、Load）
+ * - 监控长任务（Long Task）
+ * 
+ * ## 核心指标说明
+ * 
+ * ### 1. FP (First Paint) - 首次绘制
+ * 浏览器首次将像素渲染到屏幕的时间点
+ * - 可能只是背景色
+ * - 表示页面开始有视觉反馈
+ * 
+ * ### 2. FCP (First Contentful Paint) - 首次内容绘制
+ * 浏览器首次渲染 DOM 内容的时间点
+ * - 文本、图片、SVG、非白色 canvas
+ * - 用户开始看到实际内容
+ * - 建议值：< 1.8s
+ * 
+ * ### 3. LCP (Largest Contentful Paint) - 最大内容绘制
+ * 视口内最大内容元素渲染完成的时间点
+ * - 通常是主图或主要文本块
+ * - 代表主要内容加载完成
+ * - 建议值：< 2.5s
+ * 
+ * ### 4. TTFB (Time To First Byte) - 首字节时间
+ * 从请求发出到收到第一个字节的时间
+ * - 反映服务器响应速度
+ * - 包含 DNS、TCP、SSL、服务器处理时间
+ * - 建议值：< 600ms
+ * 
+ * ### 5. DOM Ready
+ * DOMContentLoaded 事件触发时间
+ * - HTML 解析完成，DOM 树构建完成
+ * - 不包含样式表、图片、子框架
+ * 
+ * ### 6. Load
+ * load 事件触发时间
+ * - 所有资源（图片、样式等）加载完成
+ * 
+ * ### 7. Long Task - 长任务
+ * 执行时间超过 50ms 的任务
+ * - 会阻塞主线程
+ * - 导致页面卡顿、交互延迟
+ * - 建议优化超过 50ms 的任务
+ * 
+ * ## 核心原理
+ * 
+ * ### Performance API
+ * 使用浏览器原生 Performance API 获取数据：
+ * 
+ * ```javascript
+ * // Paint Timing
+ * performance.getEntriesByType('paint');
+ * // → [{name: 'first-paint', startTime: 123}, {name: 'first-contentful-paint', startTime: 456}]
+ * 
+ * // Navigation Timing
+ * performance.getEntriesByType('navigation');
+ * // → [{responseStart, domContentLoadedEventEnd, loadEventEnd, ...}]
+ * ```
+ * 
+ * ### PerformanceObserver
+ * 用于监听性能条目的异步 API：
+ * 
+ * ```javascript
+ * // 监听 LCP
+ * new PerformanceObserver((list) => {
+ *   const entries = list.getEntries();
+ *   const lastEntry = entries[entries.length - 1];
+ *   console.log('LCP:', lastEntry.startTime);
+ * }).observe({ type: 'largest-contentful-paint', buffered: true });
+ * 
+ * // 监听 Long Task
+ * new PerformanceObserver((list) => {
+ *   list.getEntries().forEach(entry => {
+ *     console.log('Long Task:', entry.duration);
+ *   });
+ * }).observe({ type: 'longtask', buffered: true });
+ * ```
+ * 
+ * ## 采集时机
+ * - 页面 load 事件后延迟 3 秒采集
+ * - 等待 LCP 稳定（LCP 可能多次更新）
+ * - 只采集一次，避免重复上报
+ * 
+ * ## 浏览器兼容性
+ * - Paint Timing: Chrome 60+, Firefox 84+
+ * - LCP: Chrome 77+, Edge 79+
+ * - Long Task: Chrome 58+
+ * - Safari 对部分 API 支持有限
+ */
+
 import type { PerformanceData, LongTask } from '../types';
 
 export interface PerformanceMonitorOptions {

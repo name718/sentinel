@@ -1,3 +1,100 @@
+/**
+ * @file BehaviorTracker 用户行为追踪模块
+ * @description 记录用户在页面上的操作轨迹，用于错误发生时还原用户行为
+ * 
+ * ## 功能职责
+ * - 追踪用户点击事件
+ * - 追踪路由变化（SPA 导航）
+ * - 追踪 console 输出
+ * - 追踪网络请求（XHR/Fetch）
+ * 
+ * ## 核心原理
+ * 
+ * ### 1. 点击事件追踪
+ * 使用事件委托在 document 上监听：
+ * ```javascript
+ * document.addEventListener('click', handler, true);
+ * ```
+ * 记录：元素标签、ID、类名、时间戳
+ * 
+ * ### 2. 路由变化追踪
+ * SPA 应用的路由变化有多种方式：
+ * 
+ * a) popstate 事件（浏览器前进/后退）
+ * ```javascript
+ * window.addEventListener('popstate', handler);
+ * ```
+ * 
+ * b) hashchange 事件（hash 路由变化）
+ * ```javascript
+ * window.addEventListener('hashchange', handler);
+ * ```
+ * 
+ * c) history.pushState/replaceState（编程式导航）
+ * 需要拦截原生方法：
+ * ```javascript
+ * const original = history.pushState;
+ * history.pushState = function(...args) {
+ *   original.apply(this, args);
+ *   // 记录路由变化
+ * };
+ * ```
+ * 
+ * ### 3. Console 追踪
+ * 拦截 console 方法：
+ * ```javascript
+ * const original = console.log;
+ * console.log = function(...args) {
+ *   // 记录日志
+ *   original.apply(console, args);
+ * };
+ * ```
+ * 追踪 log/warn/error 三个级别
+ * 
+ * ### 4. XHR 追踪
+ * 拦截 XMLHttpRequest 的 open 和 send 方法：
+ * ```javascript
+ * const originalOpen = XMLHttpRequest.prototype.open;
+ * XMLHttpRequest.prototype.open = function(method, url) {
+ *   this._monitorData = { method, url };
+ *   originalOpen.apply(this, arguments);
+ * };
+ * ```
+ * 记录：请求方法、URL、状态码、耗时
+ * 
+ * ### 5. Fetch 追踪
+ * 拦截全局 fetch 函数：
+ * ```javascript
+ * const originalFetch = window.fetch;
+ * window.fetch = async function(input, init) {
+ *   const startTime = Date.now();
+ *   const response = await originalFetch(input, init);
+ *   // 记录请求信息
+ *   return response;
+ * };
+ * ```
+ * 
+ * ## Breadcrumb 数据结构
+ * ```typescript
+ * {
+ *   type: 'click' | 'route' | 'console' | 'xhr' | 'fetch',
+ *   category: string,    // 分类（ui/navigation/http）
+ *   message: string,     // 描述信息
+ *   data: object,        // 附加数据
+ *   timestamp: number    // 时间戳
+ * }
+ * ```
+ * 
+ * ## 使用场景
+ * 当错误发生时，可以查看错误前的用户行为：
+ * 1. 用户点击了哪些按钮
+ * 2. 访问了哪些页面
+ * 3. 发起了哪些请求
+ * 4. 控制台输出了什么
+ * 
+ * 这些信息有助于复现和定位问题。
+ */
+
 import type { Breadcrumb, BreadcrumbType } from '../types';
 
 export interface BehaviorTrackerOptions {

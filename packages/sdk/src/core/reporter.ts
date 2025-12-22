@@ -1,3 +1,49 @@
+/**
+ * @file Reporter 数据上报模块
+ * @description 负责将采集到的监控数据可靠地发送到服务端
+ * 
+ * ## 功能职责
+ * - 数据队列管理
+ * - 批量上报（合并多条数据为一次请求）
+ * - 节流控制（限制上报频率）
+ * - 离线缓存（网络不可用时暂存数据）
+ * - 页面卸载时使用 sendBeacon 发送
+ * 
+ * ## 核心原理
+ * 
+ * ### 1. 批量上报
+ * 将多条数据合并为一次 HTTP 请求，减少网络开销：
+ * - 数据先进入队列
+ * - 达到阈值（batchSize）或超时（reportInterval）时触发上报
+ * - 合并为 { dsn, events: [...] } 格式发送
+ * 
+ * ### 2. 节流控制
+ * 防止短时间内大量上报导致服务端压力：
+ * - 记录上次上报时间
+ * - 两次上报间隔不小于 minInterval（默认 1s）
+ * 
+ * ### 3. 离线缓存
+ * 网络不可用时保证数据不丢失：
+ * - 检测 navigator.onLine 状态
+ * - 离线时将数据存入 localStorage
+ * - 监听 online 事件，网络恢复后重传
+ * - 限制缓存数据量（最多 100 条）
+ * 
+ * ### 4. sendBeacon
+ * 页面卸载时确保数据发送：
+ * - 监听 beforeunload 事件
+ * - 使用 navigator.sendBeacon() 发送
+ * - sendBeacon 是异步的，不会阻塞页面关闭
+ * - 如果 sendBeacon 失败，降级到离线缓存
+ * 
+ * ## 上报流程
+ * ```
+ * push(data) → 队列 → 达到阈值? → flush() → 检查网络 → send() / saveOffline()
+ *                         ↑
+ *                    定时器触发
+ * ```
+ */
+
 import type { ReportData } from '../types';
 
 export interface ReporterConfig {

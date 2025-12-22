@@ -1,3 +1,38 @@
+/**
+ * @file Monitor 核心模块
+ * @description 前端监控 SDK 的核心入口，负责初始化和协调各个子模块
+ * 
+ * ## 功能职责
+ * - 提供 SDK 初始化入口 init()
+ * - 管理全局配置（dsn、上报地址、采样率等）
+ * - 协调各子模块（错误捕获、性能监控、行为追踪、数据上报）
+ * - 管理 Breadcrumbs（用户行为面包屑）
+ * - 提供手动上报接口
+ * 
+ * ## 设计模式
+ * - 单例模式：确保全局只有一个 Monitor 实例，避免重复初始化
+ * - 门面模式：对外提供简洁的 API，内部协调多个子系统
+ * 
+ * ## 使用方式
+ * ```typescript
+ * import { Monitor } from '@monitor/sdk';
+ * 
+ * Monitor.getInstance().init({
+ *   dsn: 'your-project-id',
+ *   reportUrl: 'https://your-server.com/api/report'
+ * });
+ * ```
+ * 
+ * ## 初始化流程
+ * 1. 校验配置参数
+ * 2. 合并默认配置
+ * 3. 初始化 Reporter（数据上报器）
+ * 4. 初始化 ErrorCatcher（错误捕获）
+ * 5. 初始化 ResourceMonitor（资源监控）
+ * 6. 初始化 BehaviorTracker（行为追踪）
+ * 7. 初始化 PerformanceMonitor（性能监控）
+ */
+
 import type { MonitorConfig, Breadcrumb, ReportData, ErrorEvent, ResourceError } from '../types';
 import { Reporter } from './reporter';
 import { ErrorCatcher } from './error-catcher';

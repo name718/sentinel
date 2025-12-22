@@ -1,3 +1,67 @@
+/**
+ * @file ErrorCatcher 错误捕获模块
+ * @description 自动捕获页面中的 JavaScript 运行时错误和未处理的 Promise 异常
+ * 
+ * ## 功能职责
+ * - 捕获 JS 运行时错误（语法错误、引用错误等）
+ * - 捕获未处理的 Promise rejection
+ * - 格式化错误信息（类型、消息、堆栈、位置）
+ * - 关联用户行为 Breadcrumbs
+ * 
+ * ## 核心原理
+ * 
+ * ### 1. window.onerror
+ * 全局错误处理器，捕获同步 JS 错误：
+ * ```javascript
+ * window.onerror = function(message, source, lineno, colno, error) {
+ *   // message: 错误消息
+ *   // source: 发生错误的脚本 URL
+ *   // lineno: 行号
+ *   // colno: 列号
+ *   // error: Error 对象（包含堆栈）
+ * }
+ * ```
+ * 
+ * 注意事项：
+ * - 跨域脚本错误只能获取 "Script error." 消息
+ * - 需要在脚本标签添加 crossorigin 属性并配置 CORS
+ * - 返回 true 可以阻止浏览器默认的错误处理
+ * 
+ * ### 2. window.onunhandledrejection
+ * 捕获未处理的 Promise rejection：
+ * ```javascript
+ * window.onunhandledrejection = function(event) {
+ *   // event.reason: rejection 的原因（可能是 Error 或其他值）
+ *   // event.promise: 被 reject 的 Promise
+ * }
+ * ```
+ * 
+ * 常见场景：
+ * - Promise.reject() 没有 catch
+ * - async 函数中抛出错误没有 try-catch
+ * - then() 回调中抛出错误没有后续 catch
+ * 
+ * ### 3. 错误数据结构
+ * ```typescript
+ * {
+ *   type: 'error' | 'unhandledrejection',
+ *   message: string,      // 错误消息
+ *   stack: string,        // 堆栈信息
+ *   filename: string,     // 文件名
+ *   lineno: number,       // 行号
+ *   colno: number,        // 列号
+ *   timestamp: number,    // 时间戳
+ *   url: string,          // 页面 URL
+ *   breadcrumbs: []       // 用户行为轨迹
+ * }
+ * ```
+ * 
+ * ## 使用注意
+ * - 安装后会覆盖原有的 onerror/onunhandledrejection
+ * - 会保存并调用原有的处理器，不影响其他库
+ * - 卸载时会恢复原有处理器
+ */
+
 import type { ErrorEvent, Breadcrumb } from '../types';
 
 export interface ErrorCatcherOptions {

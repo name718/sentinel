@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import rrwebPlayer from 'rrweb-player';
 import 'rrweb-player/dist/style.css';
 
@@ -15,19 +15,34 @@ const props = defineProps<{
 }>();
 
 const playerContainer = ref<HTMLElement | null>(null);
-let player: rrwebPlayer | null = null;
+let player: any = null;
 
-function initPlayer() {
-  if (!props.replay || !playerContainer.value) return;
+async function initPlayer() {
+  if (!props.replay || !playerContainer.value) {
+    console.log('[SessionReplay] Cannot init player:', { 
+      hasReplay: !!props.replay, 
+      hasContainer: !!playerContainer.value 
+    });
+    return;
+  }
+  
+  console.log('[SessionReplay] Initializing player with events:', props.replay.events.length);
   
   // 清理旧的播放器
   if (player) {
-    player.pause();
+    try {
+      player.pause();
+    } catch (e) {
+      console.warn('[SessionReplay] Error pausing old player:', e);
+    }
     player = null;
   }
   
   // 清空容器
   playerContainer.value.innerHTML = '';
+  
+  // 等待 DOM 更新
+  await nextTick();
   
   try {
     // 创建新播放器
@@ -42,27 +57,38 @@ function initPlayer() {
         speedOption: [1, 2, 4, 8],
       },
     });
+    console.log('[SessionReplay] Player initialized successfully');
   } catch (e) {
-    console.error('Failed to initialize replay player:', e);
+    console.error('[SessionReplay] Failed to initialize replay player:', e);
   }
 }
 
-watch(() => props.replay, () => {
-  if (props.replay) {
+watch(() => props.replay, (newReplay) => {
+  console.log('[SessionReplay] Replay data changed:', { 
+    hasReplay: !!newReplay,
+    events: newReplay?.events?.length 
+  });
+  if (newReplay) {
     // 延迟初始化，确保 DOM 已渲染
-    setTimeout(initPlayer, 100);
+    setTimeout(initPlayer, 200);
   }
-});
+}, { immediate: true });
 
 onMounted(() => {
+  console.log('[SessionReplay] Component mounted');
   if (props.replay) {
     initPlayer();
   }
 });
 
 onUnmounted(() => {
+  console.log('[SessionReplay] Component unmounting');
   if (player) {
-    player.pause();
+    try {
+      player.pause();
+    } catch (e) {
+      console.warn('[SessionReplay] Error pausing player on unmount:', e);
+    }
     player = null;
   }
 });
@@ -99,11 +125,14 @@ function formatDuration(ms: number): string {
         </div>
       </div>
       
-      <div ref="playerContainer" class="player-container"></div>
+      <div ref="playerContainer" class="player-container">
+        <!-- 播放器将在这里渲染 -->
+      </div>
       
       <div class="replay-tips">
         <div class="tip">💡 提示：这是错误发生前 10 秒的用户操作录制</div>
         <div class="tip">🔒 隐私保护：所有输入内容已自动脱敏</div>
+        <div class="tip debug">🐛 调试：打开浏览器控制台查看详细日志</div>
       </div>
     </div>
   </div>
@@ -168,10 +197,22 @@ function formatDuration(ms: number): string {
 
 .player-container {
   width: 100%;
+  min-height: 600px;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   background: #000;
+  position: relative;
+}
+
+.player-container:empty::after {
+  content: '正在加载播放器...';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #64748b;
+  font-size: 14px;
 }
 
 .replay-tips {
@@ -188,6 +229,12 @@ function formatDuration(ms: number): string {
   background: #f1f5f9;
   border-radius: 6px;
   border-left: 3px solid #6366f1;
+}
+
+.tip.debug {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
 }
 
 /* rrweb-player 样式覆盖 */

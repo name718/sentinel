@@ -1,9 +1,12 @@
-import { Router, Request, Response } from 'express';
+/**
+ * SourceMap 管理路由
+ */
+import { Router, Request, Response, RequestHandler } from 'express';
 import multer from 'multer';
 import { saveSourceMap, listSourceMaps } from '../services/sourcemap';
-import { saveDB } from '../db';
+import { saveDB, getDB } from '../db';
 
-const router = Router();
+const router: Router = Router();
 
 // 配置 multer 用于文件上传
 const upload = multer({
@@ -11,8 +14,7 @@ const upload = multer({
   limits: {
     fileSize: 50 * 1024 * 1024 // 50MB 限制
   },
-  fileFilter: (req, file, cb) => {
-    // 只接受 .map 文件
+  fileFilter: (_req, file, cb) => {
     if (file.originalname.endsWith('.map') || file.mimetype === 'application/json') {
       cb(null, true);
     } else {
@@ -21,35 +23,27 @@ const upload = multer({
   }
 });
 
-/**
- * 上传 SourceMap 文件
- * POST /api/sourcemap
- * 
- * Body (multipart/form-data):
- * - file: SourceMap 文件
- * - dsn: 项目标识
- * - version: 版本号
- */
-router.post('/sourcemap', upload.single('file'), (req: Request, res: Response) => {
+/** 上传单个 SourceMap */
+const uploadSingle: RequestHandler = (req: Request, res: Response) => {
   const { dsn, version } = req.body;
   const file = req.file;
 
-  // 验证参数
   if (!dsn) {
-    return res.status(400).json({ error: 'dsn is required' });
+    res.status(400).json({ error: 'dsn is required' });
+    return;
   }
   if (!version) {
-    return res.status(400).json({ error: 'version is required' });
+    res.status(400).json({ error: 'version is required' });
+    return;
   }
   if (!file) {
-    return res.status(400).json({ error: 'file is required' });
+    res.status(400).json({ error: 'file is required' });
+    return;
   }
 
   try {
     const content = file.buffer.toString('utf-8');
-    
-    // 验证是否为有效的 JSON
-    JSON.parse(content);
+    JSON.parse(content); // 验证 JSON
 
     const success = saveSourceMap(dsn, version, file.originalname, content);
     
@@ -68,24 +62,24 @@ router.post('/sourcemap', upload.single('file'), (req: Request, res: Response) =
     console.error('[SourceMap] Upload error:', error);
     res.status(400).json({ error: 'Invalid SourceMap file' });
   }
-});
+};
 
-/**
- * 批量上传 SourceMap 文件
- * POST /api/sourcemap/batch
- */
-router.post('/sourcemap/batch', upload.array('files', 20), (req: Request, res: Response) => {
+/** 批量上传 SourceMap */
+const uploadBatch: RequestHandler = (req: Request, res: Response) => {
   const { dsn, version } = req.body;
   const files = req.files as Express.Multer.File[];
 
   if (!dsn) {
-    return res.status(400).json({ error: 'dsn is required' });
+    res.status(400).json({ error: 'dsn is required' });
+    return;
   }
   if (!version) {
-    return res.status(400).json({ error: 'version is required' });
+    res.status(400).json({ error: 'version is required' });
+    return;
   }
   if (!files || files.length === 0) {
-    return res.status(400).json({ error: 'files are required' });
+    res.status(400).json({ error: 'files are required' });
+    return;
   }
 
   const results: Array<{ filename: string; success: boolean; error?: string }> = [];
@@ -93,11 +87,11 @@ router.post('/sourcemap/batch', upload.array('files', 20), (req: Request, res: R
   for (const file of files) {
     try {
       const content = file.buffer.toString('utf-8');
-      JSON.parse(content); // 验证 JSON
+      JSON.parse(content);
       
       const success = saveSourceMap(dsn, version, file.originalname, content);
       results.push({ filename: file.originalname, success });
-    } catch (error) {
+    } catch {
       results.push({
         filename: file.originalname,
         success: false,
@@ -115,39 +109,38 @@ router.post('/sourcemap/batch', upload.array('files', 20), (req: Request, res: R
     uploaded: successCount,
     results
   });
-});
+};
 
-/**
- * 获取 SourceMap 列表
- * GET /api/sourcemap
- */
+// 路由定义
+router.post('/sourcemap', upload.single('file') as RequestHandler, uploadSingle);
+router.post('/sourcemap/batch', upload.array('files', 20) as RequestHandler, uploadBatch);
+
+/** 获取 SourceMap 列表 */
 router.get('/sourcemap', (req: Request, res: Response) => {
   const { dsn } = req.query;
 
   if (!dsn) {
-    return res.status(400).json({ error: 'dsn is required' });
+    res.status(400).json({ error: 'dsn is required' });
+    return;
   }
 
   const list = listSourceMaps(dsn as string);
   res.json({ list });
 });
 
-/**
- * 删除 SourceMap
- * DELETE /api/sourcemap
- */
+/** 删除 SourceMap */
 router.delete('/sourcemap', (req: Request, res: Response) => {
   const { dsn, version, filename } = req.query;
 
   if (!dsn || !version || !filename) {
-    return res.status(400).json({ error: 'dsn, version and filename are required' });
+    res.status(400).json({ error: 'dsn, version and filename are required' });
+    return;
   }
 
-  const { getDB } = require('../db');
   const db = getDB();
-  
   if (!db) {
-    return res.status(500).json({ error: 'Database not initialized' });
+    res.status(500).json({ error: 'Database not initialized' });
+    return;
   }
 
   try {
@@ -157,7 +150,7 @@ router.delete('/sourcemap', (req: Request, res: Response) => {
     );
     saveDB();
     res.json({ success: true });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to delete SourceMap' });
   }
 });

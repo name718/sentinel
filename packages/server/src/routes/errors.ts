@@ -1,12 +1,41 @@
-import { Router } from 'express';
+/**
+ * 错误查询路由
+ */
+import { Router, Request, Response } from 'express';
 import { getDB } from '../db';
 import { parseStack } from '../services/sourcemap';
 import { normalizeMessage, extractStackSignature } from '../services/error-aggregation';
+import type { SqlValue } from 'sql.js';
 
-const router = Router();
+const router: Router = Router();
+
+/** 数据库行类型 */
+type DbRow = SqlValue[];
+
+/** 解析错误记录 */
+function parseErrorRow(row: DbRow) {
+  return {
+    id: row[0] as number,
+    dsn: row[1] as string,
+    type: row[2] as string,
+    message: row[3] as string,
+    normalizedMessage: row[4] as string | null,
+    stack: row[5] as string | null,
+    filename: row[6] as string | null,
+    lineno: row[7] as number | null,
+    colno: row[8] as number | null,
+    url: row[9] as string,
+    breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
+    timestamp: row[11] as number,
+    firstSeen: row[12] as number | null,
+    fingerprint: row[13] as string | null,
+    count: row[14] as number,
+    createdAt: row[15] as string
+  };
+}
 
 /** 错误列表查询 */
-router.get('/errors', (req, res) => {
+router.get('/errors', (req: Request, res: Response) => {
   const { dsn, startTime, endTime, type, page = '1', pageSize = '20' } = req.query;
   
   if (!dsn) {
@@ -45,26 +74,7 @@ router.get('/errors', (req, res) => {
     params.push(Number(pageSize), offset);
 
     const result = db.exec(sql, params);
-    
-    // 表结构: id, dsn, type, message, normalized_message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, first_seen, fingerprint, count, created_at
-    const list = result.length > 0 ? result[0].values.map((row) => ({
-      id: row[0],
-      dsn: row[1],
-      type: row[2],
-      message: row[3],
-      normalizedMessage: row[4],
-      stack: row[5],
-      filename: row[6],
-      lineno: row[7],
-      colno: row[8],
-      url: row[9],
-      breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
-      timestamp: row[11],
-      firstSeen: row[12],
-      fingerprint: row[13],
-      count: row[14],
-      createdAt: row[15]
-    })) : [];
+    const list = result.length > 0 ? result[0].values.map(parseErrorRow) : [];
 
     res.json({ total, list, page: Number(page), pageSize: Number(pageSize) });
   } catch (error) {
@@ -74,9 +84,9 @@ router.get('/errors', (req, res) => {
 });
 
 /** 错误详情 */
-router.get('/errors/:id', async (req, res) => {
+router.get('/errors/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { version } = req.query; // 可选的版本号参数
+  const { version } = req.query;
   
   const db = getDB();
   if (!db) {
@@ -90,43 +100,23 @@ router.get('/errors/:id', async (req, res) => {
       return res.status(404).json({ error: 'Error not found' });
     }
 
-    const row = result[0].values[0];
-    // 表结构: id, dsn, type, message, normalized_message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, first_seen, fingerprint, count, created_at
-    const error = {
-      id: row[0],
-      dsn: row[1] as string,
-      type: row[2],
-      message: row[3],
-      normalizedMessage: row[4],
-      stack: row[5] as string | null,
-      filename: row[6],
-      lineno: row[7],
-      colno: row[8],
-      url: row[9],
-      breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
-      timestamp: row[11],
-      firstSeen: row[12],
-      fingerprint: row[13],
-      count: row[14],
-      createdAt: row[15],
-      parsedStack: null as unknown
-    };
+    const errorRecord = parseErrorRow(result[0].values[0]);
+    const responseData: Record<string, unknown> = { ...errorRecord, parsedStack: null };
 
     // 如果有堆栈信息，尝试解析 SourceMap
-    if (error.stack) {
+    if (errorRecord.stack) {
       try {
-        error.parsedStack = await parseStack(
-          error.stack,
-          error.dsn,
+        responseData.parsedStack = await parseStack(
+          errorRecord.stack,
+          errorRecord.dsn,
           version as string | undefined
         );
       } catch (parseError) {
         console.error('[Errors] SourceMap parse failed:', parseError);
-        // 解析失败不影响返回原始数据
       }
     }
 
-    res.json(error);
+    res.json(responseData);
   } catch (error) {
     console.error('[Errors] Query failed:', error);
     res.status(500).json({ error: 'Query failed' });
@@ -134,8 +124,8 @@ router.get('/errors/:id', async (req, res) => {
 });
 
 /** 错误趋势统计 */
-router.get('/errors/stats/trend', (req, res) => {
-  const { dsn, startTime, endTime, interval = 'hour' } = req.query;
+router.get('/errors/stats/trend', (req: Request, res: Response) => {
+  const { dsn, startTime, endTime } = req.query;
   
   if (!dsn) {
     return res.status(400).json({ error: 'dsn is required' });
@@ -147,7 +137,6 @@ router.get('/errors/stats/trend', (req, res) => {
   }
 
   try {
-    // 简化的趋势统计
     let sql = `
       SELECT 
         strftime('%Y-%m-%d %H:00:00', datetime(timestamp/1000, 'unixepoch')) as time_bucket,
@@ -169,11 +158,9 @@ router.get('/errors/stats/trend', (req, res) => {
     sql += ' GROUP BY time_bucket ORDER BY time_bucket';
 
     const result = db.exec(sql, params);
-    
-    const trend = result.length > 0 ? result[0].values.map((row) => ({
-      time: row[0],
-      count: row[1]
-    })) : [];
+    const trend = result.length > 0 
+      ? result[0].values.map((row: DbRow) => ({ time: row[0], count: row[1] })) 
+      : [];
 
     res.json({ trend });
   } catch (error) {
@@ -182,8 +169,8 @@ router.get('/errors/stats/trend', (req, res) => {
   }
 });
 
-/** 错误分组统计 - 按指纹聚合 */
-router.get('/errors/stats/groups', (req, res) => {
+/** 错误分组统计 */
+router.get('/errors/stats/groups', (req: Request, res: Response) => {
   const { dsn, startTime, endTime, limit = '20' } = req.query;
   
   if (!dsn) {
@@ -198,9 +185,7 @@ router.get('/errors/stats/groups', (req, res) => {
   try {
     let sql = `
       SELECT 
-        fingerprint,
-        type,
-        message,
+        fingerprint, type, message,
         SUM(count) as total_count,
         MIN(timestamp) as first_seen,
         MAX(timestamp) as last_seen,
@@ -223,8 +208,7 @@ router.get('/errors/stats/groups', (req, res) => {
     params.push(Number(limit));
 
     const result = db.exec(sql, params);
-    
-    const groups = result.length > 0 ? result[0].values.map((row: unknown[]) => ({
+    const groups = result.length > 0 ? result[0].values.map((row: DbRow) => ({
       fingerprint: row[0],
       type: row[1],
       message: row[2],
@@ -242,8 +226,8 @@ router.get('/errors/stats/groups', (req, res) => {
   }
 });
 
-/** 获取错误的堆栈签名 */
-router.get('/errors/:id/signature', (req, res) => {
+/** 获取错误堆栈签名 */
+router.get('/errors/:id/signature', (req: Request, res: Response) => {
   const { id } = req.params;
   
   const db = getDB();
@@ -259,12 +243,8 @@ router.get('/errors/:id/signature', (req, res) => {
     }
 
     const stack = result[0].values[0][0] as string | null;
+    const signature = stack ? extractStackSignature(stack) : null;
     
-    if (!stack) {
-      return res.json({ signature: null });
-    }
-
-    const signature = extractStackSignature(stack);
     res.json({ signature });
   } catch (error) {
     console.error('[Errors] Signature query failed:', error);

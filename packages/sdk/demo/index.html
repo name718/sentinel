@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor SDK Demo</title>
+  <style>
+    body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    button { margin: 5px; padding: 10px 20px; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 15px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Monitor SDK Demo</h1>
+  
+  <h2>初始化</h2>
+  <button onclick="initSDK()">初始化 SDK</button>
+  <button onclick="checkStatus()">检查状态</button>
+  
+  <h2>测试错误捕获</h2>
+  <button onclick="triggerError()">触发 JS 错误</button>
+  <button onclick="triggerPromiseError()">触发 Promise 错误</button>
+  
+  <h2>测试 Breadcrumb</h2>
+  <button onclick="addBreadcrumb()">添加 Breadcrumb</button>
+  <button onclick="showBreadcrumbs()">查看 Breadcrumbs</button>
+  
+  <h2>输出</h2>
+  <pre id="output">等待操作...</pre>
+
+  <script src="../dist/index.js"></script>
+  <script>
+    const output = document.getElementById('output');
+    const log = (msg) => {
+      output.textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+      console.log(msg);
+    };
+
+    function initSDK() {
+      try {
+        Monitor.Monitor.getInstance().init({
+          dsn: 'test-project',
+          reportUrl: 'http://localhost:3000/api/report'
+        });
+        log('SDK 初始化成功！');
+      } catch (e) {
+        log('初始化失败: ' + e.message);
+      }
+    }
+
+    function checkStatus() {
+      const monitor = Monitor.Monitor.getInstance();
+      log({
+        initialized: monitor.isInitialized(),
+        config: monitor.getConfig()
+      });
+    }
+
+    function triggerError() {
+      // 故意触发一个错误
+      nonExistentFunction();
+    }
+
+    function triggerPromiseError() {
+      Promise.reject(new Error('测试 Promise 错误'));
+    }
+
+    function addBreadcrumb() {
+      const monitor = Monitor.Monitor.getInstance();
+      monitor.addBreadcrumb({
+        type: 'click',
+        category: 'ui',
+        message: '点击了按钮',
+        timestamp: Date.now()
+      });
+      log('Breadcrumb 已添加');
+    }
+
+    function showBreadcrumbs() {
+      const monitor = Monitor.Monitor.getInstance();
+      log(monitor.getBreadcrumbs());
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "@monitor/sdk",
+  "version": "1.0.0",
+  "description": "前端监控 SDK",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.5",
+    "rollup": "^4.6.0",
+    "rollup-plugin-dts": "^6.1.0",
+    "fast-check": "^3.14.0",
+    "tslib": "^2.6.2"
+  }
+}

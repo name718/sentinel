@@ -1,0 +1,24 @@
+{
+  "name": "frontend-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "前端错误与异常监控系统",
+  "scripts": {
+    "dev:sdk": "pnpm --filter @monitor/sdk dev",
+    "dev:server": "pnpm --filter @monitor/server dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "eslint packages --ext .ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

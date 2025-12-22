@@ -13,5 +13,9 @@
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vue": "^3.5.26"
+  },
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "vue-chartjs": "^5.3.3"
   }
 }

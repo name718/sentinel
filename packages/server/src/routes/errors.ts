@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getDB } from '../db';
+import { parseStack } from '../services/sourcemap';
 
 const router = Router();
 
@@ -69,8 +70,9 @@ router.get('/errors', (req, res) => {
 });
 
 /** 错误详情 */
-router.get('/errors/:id', (req, res) => {
+router.get('/errors/:id', async (req, res) => {
   const { id } = req.params;
+  const { version } = req.query; // 可选的版本号参数
   
   const db = getDB();
   if (!db) {
@@ -87,10 +89,10 @@ router.get('/errors/:id', (req, res) => {
     const row = result[0].values[0];
     const error = {
       id: row[0],
-      dsn: row[1],
+      dsn: row[1] as string,
       type: row[2],
       message: row[3],
-      stack: row[4],
+      stack: row[4] as string | null,
       filename: row[5],
       lineno: row[6],
       colno: row[7],
@@ -99,8 +101,23 @@ router.get('/errors/:id', (req, res) => {
       timestamp: row[10],
       fingerprint: row[11],
       count: row[12],
-      createdAt: row[13]
+      createdAt: row[13],
+      parsedStack: null as unknown
     };
+
+    // 如果有堆栈信息，尝试解析 SourceMap
+    if (error.stack) {
+      try {
+        error.parsedStack = await parseStack(
+          error.stack,
+          error.dsn,
+          version as string | undefined
+        );
+      } catch (parseError) {
+        console.error('[Errors] SourceMap parse failed:', parseError);
+        // 解析失败不影响返回原始数据
+      }
+    }
 
     res.json(error);
   } catch (error) {

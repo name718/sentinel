@@ -4,6 +4,7 @@ import { initDB } from './db';
 import reportRouter from './routes/report';
 import errorsRouter from './routes/errors';
 import performanceRouter from './routes/performance';
+import sourcemapRouter from './routes/sourcemap';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', reportRouter);
 app.use('/api', errorsRouter);
 app.use('/api', performanceRouter);
+app.use('/api', sourcemapRouter);
 
 const PORT = process.env.PORT || 3000;
 

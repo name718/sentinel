@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "test.js",
+  "sources": ["../src/test.ts"],
+  "sourcesContent": ["function hello(name: string) {\n  console.log('Hello, ' + name);\n  throw new Error('Test error');\n}\n\nhello('World');\n"],
+  "names": ["hello", "name", "console", "log", "Error"],
+  "mappings": "AAAA,SAASA,MAAMC,GACXC,QAAQC,IAAI,UAAYF,GAExB,MAAM,IAAIG,MAAM,cAGpBJ,MAAM"
+}

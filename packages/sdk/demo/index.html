@@ -5,25 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monitor SDK Demo</title>
   <style>
-    body { font-family: system-ui; max-width: 600px; margin: 40px auto; padding: 0 20px; }
-    button { margin: 5px; padding: 10px 20px; cursor: pointer; }
-    pre { background: #f5f5f5; padding: 15px; overflow: auto; }
+    body { font-family: system-ui; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    button { margin: 5px; padding: 10px 20px; cursor: pointer; border-radius: 4px; border: 1px solid #ddd; }
+    button:hover { background: #f0f0f0; }
+    pre { background: #f5f5f5; padding: 15px; overflow: auto; border-radius: 4px; max-height: 300px; }
+    h2 { margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .success { color: green; }
+    .error { color: red; }
   </style>
 </head>
 <body>
   <h1>🔍 Monitor SDK Demo</h1>
   
-  <h2>初始化</h2>
+  <h2>1. 初始化</h2>
   <button onclick="initSDK()">初始化 SDK</button>
   <button onclick="checkStatus()">检查状态</button>
   
-  <h2>测试错误捕获</h2>
+  <h2>2. 错误捕获测试</h2>
   <button onclick="triggerError()">触发 JS 错误</button>
   <button onclick="triggerPromiseError()">触发 Promise 错误</button>
+  <button onclick="manualCapture()">手动捕获错误</button>
   
-  <h2>测试 Breadcrumb</h2>
-  <button onclick="addBreadcrumb()">添加 Breadcrumb</button>
+  <h2>3. 资源加载测试</h2>
+  <button onclick="loadBadScript()">加载不存在的脚本</button>
+  <button onclick="loadBadImage()">加载不存在的图片</button>
+  
+  <h2>4. 用户行为追踪</h2>
   <button onclick="showBreadcrumbs()">查看 Breadcrumbs</button>
+  <button onclick="testFetch()">发起 Fetch 请求</button>
+  <button onclick="testConsole()">测试 Console 记录</button>
+  
+  <h2>5. 数据上报</h2>
+  <button onclick="flushData()">立即上报</button>
+  <button onclick="queryErrors()">查询错误列表</button>
+  <button onclick="queryPerformance()">查询性能数据</button>
   
   <h2>输出</h2>
   <pre id="output">等待操作...</pre>
@@ -31,20 +46,26 @@
   <script src="../dist/index.js"></script>
   <script>
     const output = document.getElementById('output');
-    const log = (msg) => {
-      output.textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+    const log = (msg, isError = false) => {
+      const text = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+      output.textContent = text;
+      output.className = isError ? 'error' : '';
       console.log(msg);
     };
 
+    // 1. 初始化
     function initSDK() {
       try {
         Monitor.Monitor.getInstance().init({
-          dsn: 'test-project',
-          reportUrl: 'http://localhost:3000/api/report'
+          dsn: 'demo-project',
+          reportUrl: 'http://localhost:3000/api/report',
+          maxBreadcrumbs: 10,
+          batchSize: 5,
+          reportInterval: 10000
         });
-        log('SDK 初始化成功！');
+        log('✅ SDK 初始化成功！');
       } catch (e) {
-        log('初始化失败: ' + e.message);
+        log('❌ 初始化失败: ' + e.message, true);
       }
     }
 
@@ -52,34 +73,100 @@
       const monitor = Monitor.Monitor.getInstance();
       log({
         initialized: monitor.isInitialized(),
-        config: monitor.getConfig()
+        config: monitor.getConfig(),
+        breadcrumbsCount: monitor.getBreadcrumbs().length
       });
     }
 
+    // 2. 错误捕获
     function triggerError() {
-      // 故意触发一个错误
-      nonExistentFunction();
+      log('触发 JS 错误...');
+      setTimeout(() => {
+        nonExistentFunction();
+      }, 100);
     }
 
     function triggerPromiseError() {
+      log('触发 Promise 错误...');
       Promise.reject(new Error('测试 Promise 错误'));
     }
 
-    function addBreadcrumb() {
-      const monitor = Monitor.Monitor.getInstance();
-      monitor.addBreadcrumb({
-        type: 'click',
-        category: 'ui',
-        message: '点击了按钮',
-        timestamp: Date.now()
-      });
-      log('Breadcrumb 已添加');
+    function manualCapture() {
+      Monitor.Monitor.getInstance().captureError(new Error('手动捕获的错误'));
+      log('✅ 已手动捕获错误');
     }
 
-    function showBreadcrumbs() {
-      const monitor = Monitor.Monitor.getInstance();
-      log(monitor.getBreadcrumbs());
+    // 3. 资源加载
+    function loadBadScript() {
+      const script = document.createElement('script');
+      script.src = 'http://localhost:9999/not-exist.js';
+      document.body.appendChild(script);
+      log('尝试加载不存在的脚本...');
     }
+
+    function loadBadImage() {
+      const img = document.createElement('img');
+      img.src = 'http://localhost:9999/not-exist.png';
+      document.body.appendChild(img);
+      log('尝试加载不存在的图片...');
+    }
+
+    // 4. 用户行为
+    function showBreadcrumbs() {
+      const breadcrumbs = Monitor.Monitor.getInstance().getBreadcrumbs();
+      log(breadcrumbs);
+    }
+
+    async function testFetch() {
+      try {
+        const res = await fetch('http://localhost:3000/api/health');
+        const data = await res.json();
+        log({ message: 'Fetch 成功', data });
+      } catch (e) {
+        log('Fetch 失败: ' + e.message, true);
+      }
+    }
+
+    function testConsole() {
+      console.log('这是一条 log');
+      console.warn('这是一条 warning');
+      console.error('这是一条 error');
+      log('✅ 已输出 console.log/warn/error，查看 Breadcrumbs');
+    }
+
+    // 5. 数据上报
+    function flushData() {
+      Monitor.Monitor.getInstance().flush();
+      log('✅ 已触发立即上报');
+    }
+
+    async function queryErrors() {
+      try {
+        const res = await fetch('http://localhost:3000/api/errors?dsn=demo-project');
+        const data = await res.json();
+        log(data);
+      } catch (e) {
+        log('查询失败: ' + e.message, true);
+      }
+    }
+
+    async function queryPerformance() {
+      try {
+        const res = await fetch('http://localhost:3000/api/performance?dsn=demo-project');
+        const data = await res.json();
+        log(data);
+      } catch (e) {
+        log('查询失败: ' + e.message, true);
+      }
+    }
+
+    // 监听全局错误用于显示
+    window.addEventListener('error', (e) => {
+      log('捕获到错误: ' + e.message, true);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      log('捕获到 Promise 错误: ' + e.reason, true);
+    });
   </script>
 </body>
 </html>

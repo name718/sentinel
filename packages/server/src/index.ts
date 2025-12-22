@@ -1,5 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import { initDB } from './db';
+import reportRouter from './routes/report';
+import errorsRouter from './routes/errors';
+import performanceRouter from './routes/performance';
 
 const app = express();
 
@@ -12,17 +16,21 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// TODO: 添加路由
-// - POST /api/report
-// - GET /api/errors
-// - GET /api/errors/:id
-// - POST /api/sourcemap
-// - GET /api/performance
+// 路由
+app.use('/api', reportRouter);
+app.use('/api', errorsRouter);
+app.use('/api', performanceRouter);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`[Server] Running on http://localhost:${PORT}`);
+// 初始化数据库后启动服务
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`[Server] Running on http://localhost:${PORT}`);
+  });
+}).catch((err) => {
+  console.error('[Server] Failed to initialize database:', err);
+  process.exit(1);
 });
 
 export { app };

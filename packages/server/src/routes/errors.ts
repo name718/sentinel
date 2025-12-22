@@ -253,4 +253,36 @@ router.get('/errors/:id/signature', (req: Request, res: Response) => {
   }
 });
 
+/** 获取同一指纹的所有错误实例（用于 Session 对比） */
+router.get('/errors/group/:fingerprint/sessions', (req: Request, res: Response) => {
+  const { fingerprint } = req.params;
+  const { dsn, limit = '10' } = req.query;
+  
+  if (!dsn) {
+    return res.status(400).json({ error: 'dsn is required' });
+  }
+
+  const db = getDB();
+  if (!db) {
+    return res.status(500).json({ error: 'Database not initialized' });
+  }
+
+  try {
+    const sql = `
+      SELECT * FROM errors 
+      WHERE dsn = ? AND fingerprint = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `;
+    
+    const result = db.exec(sql, [dsn as string, fingerprint, Number(limit)]);
+    const sessions = result.length > 0 ? result[0].values.map(parseErrorRow) : [];
+
+    res.json({ sessions });
+  } catch (error) {
+    console.error('[Errors] Sessions query failed:', error);
+    res.status(500).json({ error: 'Query failed' });
+  }
+});
+
 export default router;

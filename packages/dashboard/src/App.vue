@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import Sidebar from './components/Sidebar.vue';
 import TopBar from './components/TopBar.vue';
 import ErrorDetailModal from './components/ErrorDetailModal.vue';
+import SessionCompare from './components/SessionCompare.vue';
 import OverviewPage from './views/OverviewPage.vue';
 import ErrorsPage from './views/ErrorsPage.vue';
 import PerformancePage from './views/PerformancePage.vue';
@@ -15,6 +16,11 @@ const DSN = 'demo-app';
 
 const activeTab = ref<'overview' | 'errors' | 'performance'>('overview');
 const timeRange = ref<'1h' | '24h' | '7d' | '30d'>('24h');
+
+// Session 对比状态
+const showSessionCompare = ref(false);
+const compareSessions = ref<any[]>([]);
+const compareFingerprint = ref('');
 
 const {
   errors,
@@ -55,6 +61,36 @@ const overviewStats = computed(() => ({
   affectedPages: new Set(errors.value.map(e => e.url)).size
 }));
 
+// 获取同一指纹的所有 Session
+async function handleCompareSessions(fingerprint: string) {
+  try {
+    const response = await fetch(`${API_BASE}/errors/group/${fingerprint}/sessions?dsn=${DSN}&limit=10`);
+    const data = await response.json();
+    
+    if (data.sessions && data.sessions.length > 0) {
+      compareSessions.value = data.sessions;
+      compareFingerprint.value = fingerprint;
+      showSessionCompare.value = true;
+    } else {
+      alert('没有找到相关的 Session 数据');
+    }
+  } catch (error) {
+    console.error('Failed to fetch sessions:', error);
+    alert('获取 Session 数据失败');
+  }
+}
+
+function closeSessionCompare() {
+  showSessionCompare.value = false;
+  compareSessions.value = [];
+  compareFingerprint.value = '';
+}
+
+function viewSessionDetail(id: number) {
+  closeSessionCompare();
+  fetchErrorDetail(id);
+}
+
 watch(timeRange, () => {
   fetchErrors();
   fetchPerformance();
@@ -87,6 +123,7 @@ onMounted(() => {
           :recentErrors="errors.slice(0, 5)"
           @viewError="fetchErrorDetail"
           @refreshGroups="fetchErrorGroups"
+          @compareSessions="handleCompareSessions"
         />
 
         <ErrorsPage
@@ -114,6 +151,14 @@ onMounted(() => {
     </div>
 
     <ErrorDetailModal :error="selectedError" @close="closeDetail" />
+    
+    <SessionCompare 
+      v-if="showSessionCompare"
+      :sessions="compareSessions"
+      :fingerprint="compareFingerprint"
+      @close="closeSessionCompare"
+      @viewSession="viewSessionDetail"
+    />
   </div>
 </template>
 

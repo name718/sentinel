@@ -21,9 +21,10 @@ defineProps<{
   recentErrors: any[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   viewError: [id: number];
   refreshGroups: [];
+  compareSessions: [fingerprint: string];
 }>();
 
 function formatTime(timestamp: number) {
@@ -111,7 +112,16 @@ function getTimeAgo(timestamp: number) {
                   <span class="group-time">{{ getTimeAgo(group.lastSeen) }}</span>
                 </div>
               </div>
-              <div class="group-badge">{{ group.count }}</div>
+              <div class="group-actions">
+                <button 
+                  class="btn-compare" 
+                  @click="$emit('compareSessions', group.fingerprint)"
+                  :title="`对比 ${group.count} 个 Session`"
+                >
+                  🔍 对比
+                </button>
+                <div class="group-badge">{{ group.count }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -343,6 +353,31 @@ function getTimeAgo(timestamp: number) {
 .group-count {
   color: var(--danger);
   font-weight: 600;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-compare {
+  padding: 6px 12px;
+  background: var(--bg-lighter);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-compare:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
 }
 
 .group-badge {

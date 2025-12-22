@@ -13,5 +13,8 @@ export type {
   PerformanceData,
   ReportData,
   ResourceError,
-  LongTask
+  LongTask,
+  UserInfo,
+  CustomContext,
+  DeviceInfo
 } from './types';

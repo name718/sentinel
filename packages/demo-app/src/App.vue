@@ -34,16 +34,48 @@ function clearConsole() {
 // SDK 初始化
 function initSDK() {
   try {
-    Monitor.getInstance().init({
+    const monitor = Monitor.getInstance();
+    monitor.init({
       dsn: CONFIG.dsn,
       reportUrl: CONFIG.reportUrl,
       maxBreadcrumbs: 20,
       batchSize: 3,
-      reportInterval: 5000
+      reportInterval: 5000,
+      errorSampleRate: 1.0,  // 100% 错误采样
+      performanceSampleRate: 0.5,  // 50% 性能采样
+      ignoreErrors: [/Script error/i],  // 忽略跨域脚本错误
+      beforeSend: (event) => {
+        // 可以在这里过滤或修改事件
+        log('📤 beforeSend 钩子触发', 'info');
+        return event;
+      }
     });
+    
+    // 设置用户信息
+    monitor.setUser({
+      id: 'user_' + Math.random().toString(36).substr(2, 9),
+      username: 'demo_user',
+      email: 'demo@example.com'
+    });
+    
+    // 设置上下文
+    monitor.setContext({
+      version: '1.0.0',
+      environment: 'demo',
+    });
+    
+    // 设置标签
+    monitor.setTag('page', 'demo');
+    monitor.setTag('feature', 'sourcemap');
+    
+    // 设置额外数据
+    monitor.setExtra('buildTime', new Date().toISOString());
+    
     connected.value = true;
     log('✅ SDK 初始化成功', 'success');
     log(`   DSN: ${CONFIG.dsn}`, 'info');
+    log(`   用户: ${monitor.getUser()?.username}`, 'info');
+    log(`   环境: ${monitor.getContext().environment}`, 'info');
   } catch (e) {
     log('❌ 初始化失败: ' + (e as Error).message, 'error');
   }
@@ -106,6 +138,41 @@ async function testAsyncError() {
 function flushData() {
   Monitor.getInstance().flush();
   log('📤 已触发数据上报', 'success');
+}
+
+// 用户和上下文管理
+function updateUser() {
+  const userId = prompt('输入用户 ID:', 'user_123');
+  const username = prompt('输入用户名:', 'test_user');
+  if (userId && username) {
+    Monitor.getInstance().setUser({
+      id: userId,
+      username: username,
+      email: `${username}@example.com`
+    });
+    log(`✅ 用户信息已更新: ${username}`, 'success');
+  }
+}
+
+function updateContext() {
+  const env = prompt('输入环境:', 'production');
+  const ver = prompt('输入版本:', '1.0.0');
+  if (env && ver) {
+    Monitor.getInstance().setContext({
+      environment: env,
+      version: ver
+    });
+    log(`✅ 上下文已更新: ${env} v${ver}`, 'success');
+  }
+}
+
+function addTag() {
+  const key = prompt('标签名:', 'feature');
+  const value = prompt('标签值:', 'test');
+  if (key && value) {
+    Monitor.getInstance().setTag(key, value);
+    log(`✅ 标签已添加: ${key}=${value}`, 'success');
+  }
 }
 
 // 文件上传
@@ -305,6 +372,29 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- 用户和上下文管理 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon" style="background: #fef3c7;">👤</div>
+            <span class="card-title">用户 & 上下文</span>
+          </div>
+          <div class="card-body">
+            <p class="hint">设置用户信息和自定义上下文，将附加到所有事件</p>
+            <div class="btn-group">
+              <button class="btn btn-primary" @click="updateUser">👤 更新用户</button>
+              <button class="btn btn-outline" @click="updateContext">🌍 更新上下文</button>
+              <button class="btn btn-outline" @click="addTag">🏷️ 添加标签</button>
+            </div>
+            <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 6px; font-size: 12px;">
+              <div><strong>当前用户:</strong> {{ Monitor.getInstance().getUser()?.username || '未设置' }}</div>
+              <div><strong>环境:</strong> {{ Monitor.getInstance().getContext().environment || '未设置' }}</div>
+              <div><strong>版本:</strong> {{ Monitor.getInstance().getContext().version || '未设置' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
         <!-- 错误列表 -->
         <div class="card">
           <div class="card-header">

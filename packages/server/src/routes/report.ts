@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { getDB, saveDB, generateFingerprint } from '../db';
+import { getDB, saveDB } from '../db';
+import { generateFingerprint } from '../services/error-aggregation';
 
 const router = Router();
 
@@ -80,7 +81,7 @@ function isPerformanceData(event: unknown): event is PerformanceData {
 function saveErrorEvent(db: ReturnType<typeof getDB>, dsn: string, event: ErrorEvent): void {
   if (!db) return;
   
-  const fingerprint = generateFingerprint(event);
+  const { fingerprint, normalizedMessage } = generateFingerprint(event);
   
   // 检查是否已存在相同指纹的错误
   const existing = db.exec(
@@ -89,15 +90,21 @@ function saveErrorEvent(db: ReturnType<typeof getDB>, dsn: string, event: ErrorE
   );
   
   if (existing.length > 0 && existing[0].values.length > 0) {
-    // 更新计数
+    // 更新计数和最后出现时间
     const id = existing[0].values[0][0];
     const count = (existing[0].values[0][1] as number) + 1;
-    db.run(`UPDATE errors SET count = ?, timestamp = ? WHERE id = ?`, [count, event.timestamp, id]);
+    db.run(`UPDATE errors SET count = ?, timestamp = ?, breadcrumbs = ? WHERE id = ?`, [
+      count,
+      event.timestamp,
+      event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
+      id
+    ]);
+    console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count}`);
   } else {
     // 插入新记录
     db.run(`
-      INSERT INTO errors (dsn, type, message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, fingerprint)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO errors (dsn, type, message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, fingerprint, normalized_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       dsn,
       event.type,
@@ -109,8 +116,10 @@ function saveErrorEvent(db: ReturnType<typeof getDB>, dsn: string, event: ErrorE
       event.url,
       event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
       event.timestamp,
-      fingerprint
+      fingerprint,
+      normalizedMessage
     ]);
+    console.log(`[Report] 新错误: fingerprint=${fingerprint}, type=${event.type}`);
   }
 }
 

@@ -31,6 +31,7 @@ function createTables(db: Database): void {
       dsn TEXT NOT NULL,
       type TEXT NOT NULL,
       message TEXT NOT NULL,
+      normalized_message TEXT,
       stack TEXT,
       filename TEXT,
       lineno INTEGER,
@@ -38,6 +39,7 @@ function createTables(db: Database): void {
       url TEXT NOT NULL,
       breadcrumbs TEXT,
       timestamp INTEGER NOT NULL,
+      first_seen INTEGER,
       fingerprint TEXT,
       count INTEGER DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -90,17 +92,4 @@ export function saveDB(): void {
 /** 获取数据库实例 */
 export function getDB(): Database | null {
   return db;
-}
-
-/** 生成错误指纹（用于聚合） */
-export function generateFingerprint(error: { type: string; message: string; filename?: string }): string {
-  const parts = [error.type, error.message, error.filename || ''].join('|');
-  // 简单的哈希
-  let hash = 0;
-  for (let i = 0; i < parts.length; i++) {
-    const char = parts.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString(16);
 }

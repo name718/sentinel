@@ -1,48 +1,114 @@
-前端错误与异常监控系统（简化版 Sentry）
-主题：前端异常监控 + 性能追踪平台
-功能
-	•	JS 错误 / Promise / 资源加载失败
-	•	用户行为回放（简化）
-	•	性能时间线
-	•	SourceMap 解析
-技术点
-	•	SDK 设计
-	•	上报策略（节流 / 批量）
-	•	Node 服务端
-	•	ClickHouse / SQLite
+# 前端监控平台
 
+一站式前端应用监控解决方案，帮助开发团队快速发现、定位和解决线上问题。
 
-  frontend-monitor/
-├── package.json              # 根 package.json (monorepo)
-├── pnpm-workspace.yaml       # pnpm workspace 配置
-├── tsconfig.json             # TypeScript 基础配置
-├── .eslintrc.json            # ESLint 配置
-├── .gitignore
-├── packages/
-│   ├── sdk/                  # 前端 SDK
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   ├── rollup.config.js
-│   │   ├── vitest.config.ts
-│   │   └── src/
-│   │       ├── index.ts      # 入口
-│   │       ├── types.ts      # 类型定义
-│   │       └── core/
-│   │           └── monitor.ts # Monitor 核心类
-│   └── server/               # Node.js 服务端
-│       ├── package.json
-│       ├── tsconfig.json
-│       ├── vitest.config.ts
-│       └── src/
-│           └── index.ts      # Koa 服务入口
-└── .kiro/specs/frontend-monitor/
-    ├── requirements.md
-    ├── design.md
-    └── tasks.md
+## 产品价值
 
+- **快速定位问题** - 错误发生时自动捕获完整上下文，配合 SourceMap 还原源码位置
+- **减少排查时间** - 用户行为轨迹回放，还原错误发生前的操作路径
+- **性能可视化** - 核心 Web 指标一目了然，发现性能瓶颈
+- **智能聚合** - 相似错误自动归类，避免重复告警轰炸
 
-## Stage 1
-> 我实现了浏览器异常模型的完整监听，并验证了不同错误的捕获边界。
+## 核心功能
 
-## Stage 2
-> 我设计并实现了一个可复用的异常监控 SDK，支持统一上报与上下文注入。
+### 🐛 错误监控
+
+自动捕获前端运行时的各类错误：
+
+- JavaScript 运行时错误
+- Promise 未处理的 rejection
+- 资源加载失败（图片、脚本、样式）
+- 网络请求异常
+
+每个错误都会记录：
+- 错误类型和消息
+- 完整调用堆栈
+- 发生页面 URL
+- 用户行为轨迹（点击、路由跳转、网络请求）
+
+### �️ SourceMap 解析
+
+生产环境代码经过压缩混淆后，错误堆栈难以阅读：
+
+```
+Error at index-Cx2rbgKI.js:1:5678
+```
+
+上传 SourceMap 后，自动还原为源码位置：
+
+```
+📍 src/utils.ts:15:10 (divideNumbers)
+```
+
+### 📊 错误聚合
+
+智能识别相同类型的错误，自动合并统计：
+
+- 基于错误特征生成唯一指纹
+- 动态内容（ID、时间戳）自动归一化
+- 显示首次/最近发生时间、影响页面数、发生次数
+
+### ⚡ 性能监控
+
+采集关键性能指标：
+
+| 指标 | 说明 |
+|------|------|
+| FP | 首次绘制时间 |
+| FCP | 首次内容绘制时间 |
+| LCP | 最大内容绘制时间 |
+| TTFB | 首字节时间 |
+| DOM Ready | DOM 解析完成时间 |
+| Load | 页面完全加载时间 |
+
+### 👆 用户行为追踪
+
+记录错误发生前的用户操作路径：
+
+- 页面点击事件
+- 路由跳转记录
+- 网络请求日志
+- 控制台输出
+
+帮助还原问题现场，快速复现 Bug。
+
+### 📤 可靠上报
+
+- 批量合并上报，减少请求数
+- 离线缓存，网络恢复后自动重传
+- 节流控制，避免高频上报
+
+## 产品组成
+
+| 模块 | 说明 |
+|------|------|
+| SDK | 嵌入前端应用，负责数据采集和上报 |
+| Server | 接收数据、存储、SourceMap 解析 |
+| Dashboard | 可视化管理后台，查看错误和性能数据 |
+
+## 快速体验
+
+```bash
+# 安装依赖
+pnpm install
+
+# 启动所有服务
+pnpm dev:server          # 后端服务 http://localhost:3000
+pnpm --filter @monitor/demo-app dev      # 演示应用 http://localhost:5173
+pnpm --filter @monitor/dashboard dev     # 管理后台 http://localhost:5174
+```
+
+1. 打开演示应用，点击「初始化 SDK」
+2. 触发各种错误，点击「立即上报」
+3. 打开管理后台，查看错误列表和详情
+
+## 适用场景
+
+- 🏢 企业内部系统监控
+- 📱 移动端 H5 应用
+- 🖥️ PC 端 Web 应用
+- ⚡ 单页应用 (SPA)
+
+## License
+
+MIT

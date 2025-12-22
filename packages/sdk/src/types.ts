@@ -110,6 +110,27 @@ export interface Breadcrumb {
 export interface LongTask {
   startTime: number;
   duration: number;
+  attribution?: string;
+}
+
+/** 资源加载数据 */
+export interface ResourceTiming {
+  name: string;
+  type: string;
+  startTime: number;
+  duration: number;
+  size: number;
+  protocol?: string;
+  cached?: boolean;
+}
+
+/** Core Web Vitals 评分 */
+export interface WebVitalsScore {
+  fcp: 'good' | 'needs-improvement' | 'poor' | null;
+  lcp: 'good' | 'needs-improvement' | 'poor' | null;
+  fid: 'good' | 'needs-improvement' | 'poor' | null;
+  cls: 'good' | 'needs-improvement' | 'poor' | null;
+  ttfb: 'good' | 'needs-improvement' | 'poor' | null;
 }
 
 /** 性能数据 */
@@ -117,10 +138,14 @@ export interface PerformanceData {
   fp?: number;
   fcp?: number;
   lcp?: number;
+  fid?: number;
+  cls?: number;
   ttfb?: number;
   domReady?: number;
   load?: number;
   longTasks?: LongTask[];
+  resources?: ResourceTiming[];
+  webVitalsScore?: WebVitalsScore;
   url: string;
   timestamp: number;
   /** 用户信息 */

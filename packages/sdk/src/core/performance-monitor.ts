@@ -93,7 +93,7 @@
  * - Safari 对部分 API 支持有限
  */
 
-import type { PerformanceData, LongTask } from '../types';
+import type { PerformanceData, LongTask, ResourceTiming, WebVitalsScore } from '../types';
 
 export interface PerformanceMonitorOptions {
   onPerformance: (data: PerformanceData) => void;
@@ -103,9 +103,13 @@ export interface PerformanceMonitorOptions {
 export class PerformanceMonitor {
   private options: PerformanceMonitorOptions;
   private longTasks: LongTask[] = [];
+  private resources: ResourceTiming[] = [];
   private lcpValue: number | undefined;
+  private fidValue: number | undefined;
+  private clsValue: number = 0;
   private lcpObserver: PerformanceObserver | null = null;
   private longTaskObserver: PerformanceObserver | null = null;
+  private clsObserver: PerformanceObserver | null = null;
   private collected = false;
 
   constructor(options: PerformanceMonitorOptions) {
@@ -118,6 +122,8 @@ export class PerformanceMonitor {
     
     this.observeLCP();
     this.observeLongTasks();
+    this.observeCLS();
+    this.observeFID();
     
     // 页面加载完成后收集数据
     if (document.readyState === 'complete') {
@@ -131,6 +137,7 @@ export class PerformanceMonitor {
   stop(): void {
     this.lcpObserver?.disconnect();
     this.longTaskObserver?.disconnect();
+    this.clsObserver?.disconnect();
   }
 
   /** 延迟收集（等待 LCP 稳定） */
@@ -175,10 +182,27 @@ export class PerformanceMonitor {
       data.lcp = Math.round(this.lcpValue);
     }
 
+    // FID
+    if (this.fidValue !== undefined) {
+      data.fid = Math.round(this.fidValue);
+    }
+
+    // CLS
+    data.cls = Math.round(this.clsValue * 1000) / 1000; // 保留3位小数
+
     // Long Tasks
     if (this.longTasks.length > 0) {
       data.longTasks = [...this.longTasks];
     }
+
+    // 收集资源加载数据
+    this.collectResources();
+    if (this.resources.length > 0) {
+      data.resources = [...this.resources];
+    }
+
+    // 计算 Web Vitals 评分
+    data.webVitalsScore = this.calculateWebVitalsScore(data);
 
     this.collected = true;
     this.options.onPerformance(data);
@@ -207,12 +231,13 @@ export class PerformanceMonitor {
   private observeLongTasks(): void {
     try {
       this.longTaskObserver = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
+        list.getEntries().forEach((entry: any) => {
           // 只记录超过 50ms 的任务
           if (entry.duration > 50) {
             this.longTasks.push({
               startTime: Math.round(entry.startTime),
-              duration: Math.round(entry.duration)
+              duration: Math.round(entry.duration),
+              attribution: entry.attribution?.[0]?.name || 'unknown'
             });
           }
         });
@@ -222,6 +247,125 @@ export class PerformanceMonitor {
     } catch (e) {
       // Long Task 不支持
     }
+  }
+
+  /** 监控 CLS (Cumulative Layout Shift) */
+  private observeCLS(): void {
+    try {
+      this.clsObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry: any) => {
+          if (!entry.hadRecentInput) {
+            this.clsValue += entry.value;
+          }
+        });
+      });
+      
+      this.clsObserver.observe({ type: 'layout-shift', buffered: true });
+    } catch (e) {
+      // CLS 不支持
+    }
+  }
+
+  /** 监控 FID (First Input Delay) */
+  private observeFID(): void {
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        if (entries.length > 0) {
+          const firstInput = entries[0] as any;
+          this.fidValue = firstInput.processingStart - firstInput.startTime;
+          observer.disconnect();
+        }
+      });
+      
+      observer.observe({ type: 'first-input', buffered: true });
+    } catch (e) {
+      // FID 不支持
+    }
+  }
+
+  /** 收集资源加载数据 */
+  private collectResources(): void {
+    if (typeof performance === 'undefined') return;
+
+    const resourceEntries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+    
+    this.resources = resourceEntries.map(entry => {
+      const resource: ResourceTiming = {
+        name: entry.name,
+        type: this.getResourceType(entry.initiatorType),
+        startTime: Math.round(entry.startTime),
+        duration: Math.round(entry.duration),
+        size: entry.transferSize || 0,
+        protocol: (entry as any).nextHopProtocol || undefined,
+        cached: entry.transferSize === 0 && entry.decodedBodySize > 0
+      };
+      return resource;
+    });
+  }
+
+  /** 获取资源类型 */
+  private getResourceType(initiatorType: string): string {
+    const typeMap: Record<string, string> = {
+      'link': 'css',
+      'script': 'js',
+      'img': 'image',
+      'xmlhttprequest': 'xhr',
+      'fetch': 'fetch',
+      'other': 'other'
+    };
+    return typeMap[initiatorType] || initiatorType;
+  }
+
+  /** 计算 Web Vitals 评分 */
+  private calculateWebVitalsScore(data: PerformanceData): WebVitalsScore {
+    return {
+      fcp: this.scoreFCP(data.fcp),
+      lcp: this.scoreLCP(data.lcp),
+      fid: this.scoreFID(data.fid),
+      cls: this.scoreCLS(data.cls),
+      ttfb: this.scoreTTFB(data.ttfb)
+    };
+  }
+
+  /** FCP 评分 (Good: <1.8s, Needs Improvement: 1.8-3s, Poor: >3s) */
+  private scoreFCP(value?: number): 'good' | 'needs-improvement' | 'poor' | null {
+    if (value === undefined) return null;
+    if (value < 1800) return 'good';
+    if (value < 3000) return 'needs-improvement';
+    return 'poor';
+  }
+
+  /** LCP 评分 (Good: <2.5s, Needs Improvement: 2.5-4s, Poor: >4s) */
+  private scoreLCP(value?: number): 'good' | 'needs-improvement' | 'poor' | null {
+    if (value === undefined) return null;
+    if (value < 2500) return 'good';
+    if (value < 4000) return 'needs-improvement';
+    return 'poor';
+  }
+
+  /** FID 评分 (Good: <100ms, Needs Improvement: 100-300ms, Poor: >300ms) */
+  private scoreFID(value?: number): 'good' | 'needs-improvement' | 'poor' | null {
+    if (value === undefined) return null;
+    if (value < 100) return 'good';
+    if (value < 300) return 'needs-improvement';
+    return 'poor';
+  }
+
+  /** CLS 评分 (Good: <0.1, Needs Improvement: 0.1-0.25, Poor: >0.25) */
+  private scoreCLS(value?: number): 'good' | 'needs-improvement' | 'poor' | null {
+    if (value === undefined) return null;
+    if (value < 0.1) return 'good';
+    if (value < 0.25) return 'needs-improvement';
+    return 'poor';
+  }
+
+  /** TTFB 评分 (Good: <800ms, Needs Improvement: 800-1800ms, Poor: >1800ms) */
+  private scoreTTFB(value?: number): 'good' | 'needs-improvement' | 'poor' | null {
+    if (value === undefined) return null;
+    if (value < 800) return 'good';
+    if (value < 1800) return 'needs-improvement';
+    return 'poor';
   }
 
   /** 获取长任务列表（用于测试） */

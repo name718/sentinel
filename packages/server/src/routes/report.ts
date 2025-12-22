@@ -26,10 +26,14 @@ interface PerformanceData {
   fp?: number;
   fcp?: number;
   lcp?: number;
+  fid?: number;
+  cls?: number;
   ttfb?: number;
   domReady?: number;
   load?: number;
   longTasks?: unknown[];
+  resources?: unknown[];
+  webVitalsScore?: unknown;
   url: string;
   timestamp: number;
 }
@@ -144,17 +148,21 @@ function saveErrorEvent(db: Database, dsn: string, event: ErrorEvent): void {
 /** 保存性能数据 */
 function savePerformanceData(db: Database, dsn: string, data: PerformanceData): void {
   db.run(`
-    INSERT INTO performance (dsn, fp, fcp, lcp, ttfb, dom_ready, load, long_tasks, url, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO performance (dsn, fp, fcp, lcp, fid, cls, ttfb, dom_ready, load, long_tasks, resources, web_vitals_score, url, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     dsn,
     data.fp ?? null,
     data.fcp ?? null,
     data.lcp ?? null,
+    data.fid ?? null,
+    data.cls ?? null,
     data.ttfb ?? null,
     data.domReady ?? null,
     data.load ?? null,
     data.longTasks ? JSON.stringify(data.longTasks) : null,
+    data.resources ? JSON.stringify(data.resources) : null,
+    data.webVitalsScore ? JSON.stringify(data.webVitalsScore) : null,
     data.url,
     data.timestamp
   ]);

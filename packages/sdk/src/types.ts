@@ -18,6 +18,10 @@ export interface MonitorConfig {
   enablePerformance?: boolean;
   /** 启用行为追踪，默认 true */
   enableBehavior?: boolean;
+  /** 启用会话录制，默认 false */
+  enableSessionReplay?: boolean;
+  /** 会话录制配置 */
+  sessionReplay?: SessionReplayConfig;
   /** 批量上报阈值，默认 10 */
   batchSize?: number;
   /** 上报间隔(ms)，默认 5000 */
@@ -30,6 +34,22 @@ export interface MonitorConfig {
   ignoreErrors?: (string | RegExp)[];
   /** 上报前的钩子，返回 false 则不上报 */
   beforeSend?: (event: ErrorEvent | PerformanceData) => boolean | ErrorEvent | PerformanceData | null;
+}
+
+/** 会话录制配置 */
+export interface SessionReplayConfig {
+  /** 最大录制时长（秒），默认 30 */
+  maxDuration?: number;
+  /** 是否屏蔽所有输入，默认 true */
+  maskAllInputs?: boolean;
+  /** 是否屏蔽文本内容，默认 false */
+  maskTextContent?: boolean;
+  /** 鼠标移动采样间隔（ms），默认 50 */
+  mousemoveSampleInterval?: number;
+  /** 滚动采样间隔（ms），默认 100 */
+  scrollSampleInterval?: number;
+  /** 错误发生时保留的录制时长（秒），默认 10 */
+  errorReplayDuration?: number;
 }
 
 /** 用户信息 */
@@ -92,6 +112,20 @@ export interface ErrorEvent {
   user?: UserInfo;
   /** 自定义上下文 */
   context?: CustomContext;
+  /** 会话录制数据 */
+  sessionReplay?: SessionReplayData;
+}
+
+/** 会话录制数据 */
+export interface SessionReplayData {
+  /** 会话 ID */
+  sessionId: string;
+  /** 录制事件（rrweb 格式） */
+  events: unknown[];
+  /** 开始时间 */
+  startTime: number;
+  /** 结束时间 */
+  endTime: number;
 }
 
 /** 行为面包屑类型 */

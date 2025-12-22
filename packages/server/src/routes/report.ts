@@ -118,15 +118,21 @@ function saveErrorEvent(db: Database, dsn: string, event: ErrorEvent): void {
     const id = existing[0].values[0][0];
     const count = (existing[0].values[0][1] as number) + 1;
     db.run(
-      'UPDATE errors SET count = ?, timestamp = ?, breadcrumbs = ? WHERE id = ?',
-      [count, event.timestamp, event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null, id]
+      'UPDATE errors SET count = ?, timestamp = ?, breadcrumbs = ?, session_replay = ? WHERE id = ?',
+      [
+        count, 
+        event.timestamp, 
+        event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
+        (event as any).sessionReplay ? JSON.stringify((event as any).sessionReplay) : null,
+        id
+      ]
     );
     console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count}`);
   } else {
     // 插入新记录
     db.run(`
-      INSERT INTO errors (dsn, type, message, stack, filename, lineno, colno, url, breadcrumbs, timestamp, fingerprint, normalized_message)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO errors (dsn, type, message, stack, filename, lineno, colno, url, breadcrumbs, session_replay, timestamp, fingerprint, normalized_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       dsn,
       event.type,
@@ -137,6 +143,7 @@ function saveErrorEvent(db: Database, dsn: string, event: ErrorEvent): void {
       event.colno || null,
       event.url,
       event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
+      (event as any).sessionReplay ? JSON.stringify((event as any).sessionReplay) : null,
       event.timestamp,
       fingerprint,
       normalizedMessage

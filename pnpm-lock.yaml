@@ -32,6 +32,9 @@ importers:
       chart.js:
         specifier: ^4.5.1
         version: 4.5.1
+      rrweb-player:
+        specifier: 1.0.0-alpha.4
+        version: 1.0.0-alpha.4
       vue-chartjs:
         specifier: ^5.3.3
         version: 5.3.3(chart.js@4.5.1)(vue@3.5.26(typescript@5.9.3))
@@ -68,6 +71,13 @@ importers:
         version: 3.5.26(typescript@5.9.3)
 
   packages/sdk:
+    dependencies:
+      rrweb:
+        specifier: 2.0.0-alpha.4
+        version: 2.0.0-alpha.4
+      rrweb-snapshot:
+        specifier: 2.0.0-alpha.4
+        version: 2.0.0-alpha.4
     devDependencies:
       '@rollup/plugin-typescript':
         specifier: ^11.1.5
@@ -693,8 +703,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@rrweb/types@2.0.0-alpha.18':
+    resolution: {integrity: sha512-iMH3amHthJZ9x3gGmBPmdfim7wLGygC2GciIkw2A6SO8giSn8PHYtRT8OKNH4V+k3SZ6RSnYHcTQxBA7pSWZ3Q==}
+
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
+
+  '@tsconfig/svelte@1.0.13':
+    resolution: {integrity: sha512-5lYJP45Xllo4yE/RUBccBT32eBlRDbqN8r1/MIvQbKxW3aFqaYPCNgm8D5V20X4ShHcwvYWNlKg3liDh1MlBoA==}
 
   '@types/body-parser@1.19.6':
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
@@ -704,6 +720,9 @@ packages:
 
   '@types/cors@2.8.19':
     resolution: {integrity: sha512-mFNylyeyqN93lfe/9CSxOGREz8cpzAhH+E93xJ4xWQf62V8sQ/24reV2nyzUWM6H6Xji+GGHpkbLe7pVoUEskg==}
+
+  '@types/css-font-loading-module@0.0.7':
+    resolution: {integrity: sha512-nl09VhutdjINdWyXxHWN/w9zlNCfr60JUqJbd24YXUuCwgeL0TpFSdElCwb6cxfB6ybE19Gjj4g0jsgkXxKv1Q==}
 
   '@types/emscripten@1.41.5':
     resolution: {integrity: sha512-cMQm7pxu6BxtHyqJ7mQZ2kXWV5SLmugybFdHCBbJ5eHzOo6VhBckEgAT3//rP5FwPHNPeEiq4SmQ5ucBwsOo4Q==}
@@ -865,6 +884,9 @@ packages:
   '@vue/shared@3.5.26':
     resolution: {integrity: sha512-7Z6/y3uFI5PRoKeorTOSXKcDj0MSasfNNltcslbFrPpcw6aXRUALq4IfJlaTRspiWIUOEZbrpM+iQGmCOiWe4A==}
 
+  '@xstate/fsm@1.6.5':
+    resolution: {integrity: sha512-b5o1I6aLNeYlU/3CPlj/Z91ybk1gUsKT+5NAJI+2W4UjvS5KLG28K9v5UvNoFVjHV8PajVZ00RH3vnjyQO7ZAw==}
+
   accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
     engines: {node: '>= 0.6'}
@@ -920,6 +942,10 @@ packages:
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  base64-arraybuffer@1.0.2:
+    resolution: {integrity: sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==}
+    engines: {node: '>= 0.6.0'}
 
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
@@ -1207,6 +1233,9 @@ packages:
 
   fastq@1.19.1:
     resolution: {integrity: sha512-GwLTyxkCXjXbxqIhTsMI2Nui8huMPtnxg7krajPJAjnEG/iiOS7i+zCtWGZR9G0NBKbXKh6X9m9UIsYX/N6vvQ==}
+
+  fflate@0.4.8:
+    resolution: {integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==}
 
   file-entry-cache@6.0.1:
     resolution: {integrity: sha512-7Gps/XWymbLk2QLYK4NzpMOrYjMhdIxXuIvy2QBsLE6ljuodKvdkWs/cpyJJ3CVIVpH0Oi1Hvg1ovbMzLdFBBg==}
@@ -1503,6 +1532,9 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
+  mitt@3.0.1:
+    resolution: {integrity: sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==}
+
   mkdirp@0.5.6:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
@@ -1715,6 +1747,18 @@ packages:
     resolution: {integrity: sha512-3nk8Y3a9Ea8szgKhinMlGMhGMw89mqule3KWczxhIzqudyHdCIOHw8WJlj/r329fACjKLEh13ZSk7oE22kyeIw==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
+
+  rrdom@0.1.7:
+    resolution: {integrity: sha512-ZLd8f14z9pUy2Hk9y636cNv5Y2BMnNEY99wxzW9tD2BLDfe1xFxtLjB4q/xCBYo6HRe0wofzKzjm4JojmpBfFw==}
+
+  rrweb-player@1.0.0-alpha.4:
+    resolution: {integrity: sha512-Wlmn9GZ5Fdqa37vd3TzsYdLl/JWEvXNUrLCrYpnOwEgmY409HwVIvvA5aIo7k582LoKgdRCsB87N+f0oWAR0Kg==}
+
+  rrweb-snapshot@2.0.0-alpha.4:
+    resolution: {integrity: sha512-KQ2OtPpXO5jLYqg1OnXS/Hf+EzqnZyP5A+XPqBCjYpj3XIje/Od4gdUwjbFo3cVuWq5Cw5Y1d3/xwgIS7/XpQQ==}
+
+  rrweb@2.0.0-alpha.4:
+    resolution: {integrity: sha512-wEHUILbxDPcNwkM3m4qgPgXAiBJyqCbbOHyVoNEVBJzHszWEFYyTbrZqUdeb1EfmTRC2PsumCIkVcomJ/xcOzA==}
 
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
@@ -2459,7 +2503,11 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.54.0':
     optional: true
 
+  '@rrweb/types@2.0.0-alpha.18': {}
+
   '@sinclair/typebox@0.27.8': {}
+
+  '@tsconfig/svelte@1.0.13': {}
 
   '@types/body-parser@1.19.6':
     dependencies:
@@ -2473,6 +2521,8 @@ snapshots:
   '@types/cors@2.8.19':
     dependencies:
       '@types/node': 20.19.27
+
+  '@types/css-font-loading-module@0.0.7': {}
 
   '@types/emscripten@1.41.5': {}
 
@@ -2709,6 +2759,8 @@ snapshots:
 
   '@vue/shared@3.5.26': {}
 
+  '@xstate/fsm@1.6.5': {}
+
   accepts@1.3.8:
     dependencies:
       mime-types: 2.1.35
@@ -2752,6 +2804,8 @@ snapshots:
   assertion-error@1.1.0: {}
 
   balanced-match@1.0.2: {}
+
+  base64-arraybuffer@1.0.2: {}
 
   bidi-js@1.0.3:
     dependencies:
@@ -3149,6 +3203,8 @@ snapshots:
     dependencies:
       reusify: 1.1.0
 
+  fflate@0.4.8: {}
+
   file-entry-cache@6.0.1:
     dependencies:
       flat-cache: 3.2.0
@@ -3448,6 +3504,8 @@ snapshots:
 
   minimist@1.2.8: {}
 
+  mitt@3.0.1: {}
+
   mkdirp@0.5.6:
     dependencies:
       minimist: 1.2.8
@@ -3667,6 +3725,28 @@ snapshots:
       '@rollup/rollup-win32-x64-gnu': 4.54.0
       '@rollup/rollup-win32-x64-msvc': 4.54.0
       fsevents: 2.3.3
+
+  rrdom@0.1.7:
+    dependencies:
+      rrweb-snapshot: 2.0.0-alpha.4
+
+  rrweb-player@1.0.0-alpha.4:
+    dependencies:
+      '@tsconfig/svelte': 1.0.13
+      rrweb: 2.0.0-alpha.4
+
+  rrweb-snapshot@2.0.0-alpha.4: {}
+
+  rrweb@2.0.0-alpha.4:
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.18
+      '@types/css-font-loading-module': 0.0.7
+      '@xstate/fsm': 1.6.5
+      base64-arraybuffer: 1.0.2
+      fflate: 0.4.8
+      mitt: 3.0.1
+      rrdom: 0.1.7
+      rrweb-snapshot: 2.0.0-alpha.4
 
   run-parallel@1.2.0:
     dependencies:

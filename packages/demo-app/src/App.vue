@@ -43,6 +43,12 @@ function initSDK() {
       reportInterval: 5000,
       errorSampleRate: 1.0,  // 100% 错误采样
       performanceSampleRate: 0.5,  // 50% 性能采样
+      enableSessionReplay: true,  // 启用会话录制
+      sessionReplay: {
+        maxDuration: 30,  // 最大录制 30 秒
+        maskAllInputs: true,  // 屏蔽所有输入
+        errorReplayDuration: 10,  // 错误发生时保留 10 秒录制
+      },
       ignoreErrors: [/Script error/i],  // 忽略跨域脚本错误
       beforeSend: (event) => {
         // 可以在这里过滤或修改事件

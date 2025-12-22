@@ -55,6 +55,7 @@ import { ErrorCatcher } from './error-catcher';
 import { ResourceMonitor } from './resource-monitor';
 import { BehaviorTracker } from './behavior-tracker';
 import { PerformanceMonitor } from './performance-monitor';
+import { SessionRecorder } from './session-recorder';
 
 /** 默认配置 */
 const DEFAULT_CONFIG: Partial<MonitorConfig> = {
@@ -78,6 +79,7 @@ export class Monitor {
   private resourceMonitor: ResourceMonitor | null = null;
   private behaviorTracker: BehaviorTracker | null = null;
   private performanceMonitor: PerformanceMonitor | null = null;
+  private sessionRecorder: SessionRecorder | null = null;
   
   /** 用户信息 */
   private user: UserInfo | null = null;
@@ -143,6 +145,19 @@ export class Monitor {
         onPerformance: (data) => this.report(data)
       });
       this.performanceMonitor.start();
+    }
+
+    // 初始化会话录制
+    if (this.config.enableSessionReplay) {
+      this.sessionRecorder = new SessionRecorder({
+        enabled: true,
+        maxDuration: this.config.sessionReplay?.maxDuration,
+        maskAllInputs: this.config.sessionReplay?.maskAllInputs,
+        maskTextContent: this.config.sessionReplay?.maskTextContent,
+        mousemoveSampleInterval: this.config.sessionReplay?.mousemoveSampleInterval,
+        scrollSampleInterval: this.config.sessionReplay?.scrollSampleInterval,
+      });
+      this.sessionRecorder.start();
     }
 
     // 自动检测设备信息
@@ -327,6 +342,21 @@ export class Monitor {
     if (event.message && this.shouldIgnoreError(event.message)) {
       return;
     }
+
+    // 附加会话录制数据
+    if (this.sessionRecorder && this.config?.enableSessionReplay) {
+      const replayDuration = this.config.sessionReplay?.errorReplayDuration || 10;
+      const recording = this.sessionRecorder.getRecentRecording(replayDuration);
+      if (recording) {
+        event.sessionReplay = {
+          sessionId: recording.sessionId,
+          events: recording.events,
+          startTime: recording.startTime,
+          endTime: recording.endTime
+        };
+      }
+    }
+
     this.report(event);
   }
 

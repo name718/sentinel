@@ -26,11 +26,12 @@ function parseErrorRow(row: DbRow) {
     colno: row[8] as number | null,
     url: row[9] as string,
     breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
-    timestamp: row[11] as number,
-    firstSeen: row[12] as number | null,
-    fingerprint: row[13] as string | null,
-    count: row[14] as number,
-    createdAt: row[15] as string
+    sessionReplay: row[11] ? JSON.parse(row[11] as string) : null,
+    timestamp: row[12] as number,
+    firstSeen: row[13] as number | null,
+    fingerprint: row[14] as string | null,
+    count: row[15] as number,
+    createdAt: row[16] as string
   };
 }
 

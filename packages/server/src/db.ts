@@ -38,6 +38,7 @@ function createTables(db: Database): void {
       colno INTEGER,
       url TEXT NOT NULL,
       breadcrumbs TEXT,
+      session_replay TEXT,
       timestamp INTEGER NOT NULL,
       first_seen INTEGER,
       fingerprint TEXT,

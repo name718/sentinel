@@ -22,5 +22,9 @@
     "rollup-plugin-dts": "^6.1.0",
     "tslib": "^2.6.2",
     "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "rrweb": "2.0.0-alpha.4",
+    "rrweb-snapshot": "2.0.0-alpha.4"
   }
 }

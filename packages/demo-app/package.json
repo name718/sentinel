@@ -1,0 +1,16 @@
+{
+  "name": "@monitor/demo-app",
+  "version": "1.0.0",
+  "description": "Monitor SDK 演示应用",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "terser": "^5.44.1",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}

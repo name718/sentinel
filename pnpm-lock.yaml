@@ -27,6 +27,21 @@ importers:
         specifier: ^1.0.0
         version: 1.6.1(@types/node@20.19.27)(terser@5.44.1)
 
+  packages/dashboard:
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.3
+        version: 6.0.3(vite@5.4.21(@types/node@20.19.27)(terser@5.44.1))(vue@3.5.26(typescript@5.9.3))
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.21
+        version: 5.4.21(@types/node@20.19.27)(terser@5.44.1)
+      vue:
+        specifier: ^3.5.26
+        version: 3.5.26(typescript@5.9.3)
+
   packages/demo-app:
     devDependencies:
       '@vitejs/plugin-vue':

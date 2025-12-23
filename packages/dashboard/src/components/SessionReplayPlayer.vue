@@ -187,9 +187,9 @@ function formatTime(timestamp: number): string {
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border);
 }
 
 .empty-icon {
@@ -201,19 +201,19 @@ function formatTime(timestamp: number): string {
 .empty-title {
   font-size: 20px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--text);
   margin-bottom: 12px;
 }
 
 .empty-desc {
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   margin: 8px 0;
 }
 
 .empty-hint {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-top: 16px;
   padding: 12px 20px;
   background: rgba(99, 102, 241, 0.1);
@@ -233,22 +233,22 @@ function formatTime(timestamp: number): string {
 .session-info-card,
 .player-card,
 .tips-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid #334155;
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid var(--border);
   background: rgba(99, 102, 241, 0.05);
 }
 
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--text);
   margin: 0;
   display: flex;
   align-items: center;
@@ -278,7 +278,7 @@ function formatTime(timestamp: number): string {
 
 .info-label {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -286,7 +286,7 @@ function formatTime(timestamp: number): string {
 
 .info-value {
   font-size: 14px;
-  color: #f1f5f9;
+  color: var(--text);
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   font-weight: 500;
 }
@@ -299,7 +299,7 @@ function formatTime(timestamp: number): string {
   overflow: hidden;
   background: #000;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow);
 }
 
 .player-loading {
@@ -314,8 +314,8 @@ function formatTime(timestamp: number): string {
 .loading-spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid #334155;
-  border-top-color: #6366f1;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 16px;
@@ -327,7 +327,7 @@ function formatTime(timestamp: number): string {
 
 .loading-text {
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 /* 提示卡片 */
@@ -351,13 +351,13 @@ function formatTime(timestamp: number): string {
 .tip-item.info {
   background: rgba(59, 130, 246, 0.1);
   border: 1px solid rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
+  color: #3b82f6;
 }
 
 .tip-item.security {
   background: rgba(34, 197, 94, 0.1);
   border: 1px solid rgba(34, 197, 94, 0.2);
-  color: #86efac;
+  color: #22c55e;
 }
 
 .tip-icon {
@@ -380,20 +380,20 @@ function formatTime(timestamp: number): string {
 }
 
 :deep(.rr-controller) {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-top: 1px solid #334155;
+  background: var(--bg-light) !important;
+  border-top: 1px solid var(--border);
 }
 
 :deep(.rr-timeline__time) {
-  color: #94a3b8 !important;
+  color: var(--text-secondary) !important;
 }
 
 :deep(.rr-controller__btns button) {
-  color: #f1f5f9 !important;
+  color: var(--text) !important;
 }
 
 :deep(.rr-controller__btns button:hover) {
-  color: #6366f1 !important;
+  color: var(--primary) !important;
 }
 
 /* 响应式设计 */

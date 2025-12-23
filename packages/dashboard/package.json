@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
+    "echarts": "^6.0.0",
     "rrweb-player": "1.0.0-alpha.4",
-    "vue-chartjs": "^5.3.3"
+    "vue-chartjs": "^5.3.3",
+    "vue-echarts": "^8.0.1"
   }
 }

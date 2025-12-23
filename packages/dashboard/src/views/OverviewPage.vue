@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import ErrorTrendEChart from '../components/charts/ErrorTrendEChart.vue';
+import ErrorTypePie from '../components/charts/ErrorTypePie.vue';
+import PerformanceBar from '../components/charts/PerformanceBar.vue';
+
 interface Stats {
   totalErrors: number;
   totalPerf: number;
@@ -14,11 +19,12 @@ interface ErrorGroup {
   lastSeen: number;
 }
 
-defineProps<{
+const props = defineProps<{
   stats: Stats;
   trendData: any[];
   errorGroups: ErrorGroup[];
   recentErrors: any[];
+  theme?: 'light' | 'dark';
 }>();
 
 const emit = defineEmits<{
@@ -26,6 +32,25 @@ const emit = defineEmits<{
   refreshGroups: [];
   compareSessions: [fingerprint: string];
 }>();
+
+// 计算错误类型分布
+const errorTypeData = computed(() => {
+  const typeMap = new Map<string, number>();
+  props.recentErrors.forEach(error => {
+    const type = error.type || 'unknown';
+    typeMap.set(type, (typeMap.get(type) || 0) + 1);
+  });
+  return Array.from(typeMap.entries()).map(([type, count]) => ({ type, count }));
+});
+
+// 模拟性能数据（实际应从 props 传入）
+const performanceData = computed(() => [
+  { name: 'FCP', value: 1200, threshold: { good: 1800, warning: 3000 } },
+  { name: 'LCP', value: 2500, threshold: { good: 2500, warning: 4000 } },
+  { name: 'TTFB', value: 800, threshold: { good: 800, warning: 1800 } },
+  { name: 'DOM Ready', value: 1500, threshold: { good: 2000, warning: 3500 } },
+  { name: 'Load', value: 3200, threshold: { good: 3000, warning: 5000 } }
+]);
 
 function formatTime(timestamp: number) {
   return new Date(timestamp).toLocaleString('zh-CN');
@@ -83,6 +108,17 @@ function getTimeAgo(timestamp: number) {
           <div class="stat-value">{{ stats.affectedPages }}</div>
         </div>
       </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="charts-grid">
+      <ErrorTrendEChart :data="trendData" :theme="theme" />
+      <ErrorTypePie :data="errorTypeData" :theme="theme" />
+    </div>
+
+    <!-- 性能指标 -->
+    <div class="performance-section">
+      <PerformanceBar :data="performanceData" :theme="theme" />
     </div>
 
     <div class="content-grid">
@@ -245,6 +281,18 @@ function getTimeAgo(timestamp: number) {
   font-size: 28px;
   font-weight: 700;
   color: var(--text);
+}
+
+/* 图表区域 */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.performance-section {
+  margin-bottom: 24px;
 }
 
 .content-grid {
@@ -444,6 +492,10 @@ function getTimeAgo(timestamp: number) {
 
 @media (max-width: 1024px) {
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 }

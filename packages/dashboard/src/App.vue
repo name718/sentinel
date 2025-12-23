@@ -127,6 +127,7 @@ onMounted(() => {
           :trendData="trendData"
           :errorGroups="errorGroups"
           :recentErrors="errors.slice(0, 5)"
+          :theme="resolvedTheme"
           @viewError="fetchErrorDetail"
           @refreshGroups="fetchErrorGroups"
           @compareSessions="handleCompareSessions"

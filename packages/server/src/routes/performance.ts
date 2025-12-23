@@ -1,10 +1,35 @@
+/**
+ * 性能数据路由
+ */
 import { Router } from 'express';
 import { getDB } from '../db';
 
-const router = Router();
+const router: Router = Router();
+
+/** 解析性能记录 */
+function parsePerformanceRow(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    dsn: row.dsn,
+    fp: row.fp,
+    fcp: row.fcp,
+    lcp: row.lcp,
+    fid: row.fid,
+    cls: row.cls,
+    ttfb: row.ttfb,
+    domReady: row.dom_ready,
+    load: row.load,
+    longTasks: row.long_tasks || [],
+    resources: row.resources || [],
+    webVitalsScore: row.web_vitals_score || null,
+    url: row.url,
+    timestamp: Number(row.timestamp),
+    createdAt: row.created_at
+  };
+}
 
 /** 性能数据列表 */
-router.get('/performance', (req, res) => {
+router.get('/performance', async (req, res) => {
   const { dsn, page = '1', pageSize = '20', startTime, endTime } = req.query;
   
   if (!dsn) {
@@ -17,49 +42,33 @@ router.get('/performance', (req, res) => {
   }
 
   try {
-    let countSql = 'SELECT COUNT(*) FROM performance WHERE dsn = ?';
-    let listSql = 'SELECT * FROM performance WHERE dsn = ?';
+    let countSql = 'SELECT COUNT(*) FROM performance WHERE dsn = $1';
+    let listSql = 'SELECT * FROM performance WHERE dsn = $1';
     const params: (string | number)[] = [dsn as string];
+    let paramIndex = 2;
 
-    // 添加时间范围过滤
     if (startTime) {
-      countSql += ' AND timestamp >= ?';
-      listSql += ' AND timestamp >= ?';
+      countSql += ` AND timestamp >= $${paramIndex}`;
+      listSql += ` AND timestamp >= $${paramIndex}`;
       params.push(Number(startTime));
+      paramIndex++;
     }
     if (endTime) {
-      countSql += ' AND timestamp <= ?';
-      listSql += ' AND timestamp <= ?';
+      countSql += ` AND timestamp <= $${paramIndex}`;
+      listSql += ` AND timestamp <= $${paramIndex}`;
       params.push(Number(endTime));
+      paramIndex++;
     }
 
-    const countResult = db.exec(countSql, params);
-    const total = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+    const countResult = await db.query(countSql, params);
+    const total = parseInt(countResult.rows[0].count, 10);
 
     const offset = (Number(page) - 1) * Number(pageSize);
-    listSql += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
+    listSql += ` ORDER BY timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     const listParams = [...params, Number(pageSize), offset];
     
-    const result = db.exec(listSql, listParams);
-
-    const list = result.length > 0 ? result[0].values.map((row) => ({
-      id: row[0],
-      dsn: row[1],
-      fp: row[2],
-      fcp: row[3],
-      lcp: row[4],
-      fid: row[5],
-      cls: row[6],
-      ttfb: row[7],
-      domReady: row[8],
-      load: row[9],
-      longTasks: row[10] ? JSON.parse(row[10] as string) : [],
-      resources: row[11] ? JSON.parse(row[11] as string) : [],
-      webVitalsScore: row[12] ? JSON.parse(row[12] as string) : null,
-      url: row[13],
-      timestamp: row[14],
-      createdAt: row[15]
-    })) : [];
+    const result = await db.query(listSql, listParams);
+    const list = result.rows.map(parsePerformanceRow);
 
     res.json({ total, list, page: Number(page), pageSize: Number(pageSize) });
   } catch (error) {
@@ -69,7 +78,7 @@ router.get('/performance', (req, res) => {
 });
 
 /** 性能数据统计 */
-router.get('/performance/stats', (req, res) => {
+router.get('/performance/stats', async (req, res) => {
   const { dsn, startTime, endTime } = req.query;
   
   if (!dsn) {
@@ -84,30 +93,33 @@ router.get('/performance/stats', (req, res) => {
   try {
     let sql = `
       SELECT 
-        AVG(fp) as avgFp,
-        AVG(fcp) as avgFcp,
-        AVG(lcp) as avgLcp,
-        AVG(ttfb) as avgTtfb,
-        AVG(dom_ready) as avgDomReady,
-        AVG(load) as avgLoad,
+        AVG(fp) as avg_fp,
+        AVG(fcp) as avg_fcp,
+        AVG(lcp) as avg_lcp,
+        AVG(ttfb) as avg_ttfb,
+        AVG(dom_ready) as avg_dom_ready,
+        AVG(load) as avg_load,
         COUNT(*) as count
       FROM performance 
-      WHERE dsn = ?
+      WHERE dsn = $1
     `;
     const params: (string | number)[] = [dsn as string];
+    let paramIndex = 2;
 
     if (startTime) {
-      sql += ' AND timestamp >= ?';
+      sql += ` AND timestamp >= $${paramIndex}`;
       params.push(Number(startTime));
+      paramIndex++;
     }
     if (endTime) {
-      sql += ' AND timestamp <= ?';
+      sql += ` AND timestamp <= $${paramIndex}`;
       params.push(Number(endTime));
+      paramIndex++;
     }
 
-    const result = db.exec(sql, params);
+    const result = await db.query(sql, params);
     
-    if (result.length === 0 || result[0].values.length === 0) {
+    if (result.rows.length === 0) {
       return res.json({
         avgFp: null,
         avgFcp: null,
@@ -119,15 +131,15 @@ router.get('/performance/stats', (req, res) => {
       });
     }
 
-    const row = result[0].values[0];
+    const row = result.rows[0];
     res.json({
-      avgFp: row[0] ? Math.round(row[0] as number) : null,
-      avgFcp: row[1] ? Math.round(row[1] as number) : null,
-      avgLcp: row[2] ? Math.round(row[2] as number) : null,
-      avgTtfb: row[3] ? Math.round(row[3] as number) : null,
-      avgDomReady: row[4] ? Math.round(row[4] as number) : null,
-      avgLoad: row[5] ? Math.round(row[5] as number) : null,
-      count: row[6]
+      avgFp: row.avg_fp ? Math.round(parseFloat(row.avg_fp)) : null,
+      avgFcp: row.avg_fcp ? Math.round(parseFloat(row.avg_fcp)) : null,
+      avgLcp: row.avg_lcp ? Math.round(parseFloat(row.avg_lcp)) : null,
+      avgTtfb: row.avg_ttfb ? Math.round(parseFloat(row.avg_ttfb)) : null,
+      avgDomReady: row.avg_dom_ready ? Math.round(parseFloat(row.avg_dom_ready)) : null,
+      avgLoad: row.avg_load ? Math.round(parseFloat(row.avg_load)) : null,
+      count: parseInt(row.count, 10)
     });
   } catch (error) {
     console.error('[Performance] Query failed:', error);

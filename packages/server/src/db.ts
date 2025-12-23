@@ -1,33 +1,57 @@
-import initSqlJs, { Database } from 'sql.js';
-import * as fs from 'fs';
-import * as path from 'path';
+/**
+ * PostgreSQL 数据库连接模块
+ * 使用 Neon 云数据库
+ */
+import { config } from 'dotenv';
+import { Pool, PoolClient, QueryResult } from 'pg';
 
-let db: Database | null = null;
-const DB_PATH = path.join(process.cwd(), 'monitor.db');
+// 加载环境变量
+config({ path: '.env.local' });
 
-/** 初始化数据库 */
-export async function initDB(): Promise<Database> {
-  if (db) return db;
+// 数据库连接池
+let pool: Pool | null = null;
 
-  const SQL = await initSqlJs();
-  
-  // 尝试加载已有数据库
-  if (fs.existsSync(DB_PATH)) {
-    const buffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(buffer);
-  } else {
-    db = new SQL.Database();
-    createTables(db);
+// 数据库连接字符串（从环境变量读取）
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is required');
+}
+
+/** 初始化数据库连接 */
+export async function initDB(): Promise<Pool> {
+  if (pool) return pool;
+
+  pool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+
+  // 测试连接
+  try {
+    const client = await pool.connect();
+    console.log('[DB] Connected to PostgreSQL (Neon)');
+    
+    // 创建表
+    await createTables(client);
+    client.release();
+    
+    return pool;
+  } catch (error) {
+    console.error('[DB] Connection failed:', error);
+    throw error;
   }
-
-  return db;
 }
 
 /** 创建表 */
-function createTables(db: Database): void {
-  db.run(`
+async function createTables(client: PoolClient): Promise<void> {
+  // 错误表
+  await client.query(`
     CREATE TABLE IF NOT EXISTS errors (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       dsn TEXT NOT NULL,
       type TEXT NOT NULL,
       message TEXT NOT NULL,
@@ -37,19 +61,20 @@ function createTables(db: Database): void {
       lineno INTEGER,
       colno INTEGER,
       url TEXT NOT NULL,
-      breadcrumbs TEXT,
-      session_replay TEXT,
-      timestamp INTEGER NOT NULL,
-      first_seen INTEGER,
+      breadcrumbs JSONB,
+      session_replay JSONB,
+      timestamp BIGINT NOT NULL,
+      first_seen BIGINT,
       fingerprint TEXT,
       count INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  db.run(`
+  // 性能表
+  await client.query(`
     CREATE TABLE IF NOT EXISTS performance (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       dsn TEXT NOT NULL,
       fp INTEGER,
       fcp INTEGER,
@@ -59,42 +84,57 @@ function createTables(db: Database): void {
       ttfb INTEGER,
       dom_ready INTEGER,
       load INTEGER,
-      long_tasks TEXT,
-      resources TEXT,
-      web_vitals_score TEXT,
+      long_tasks JSONB,
+      resources JSONB,
+      web_vitals_score JSONB,
       url TEXT NOT NULL,
-      timestamp INTEGER NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      timestamp BIGINT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  db.run(`
+  // SourceMap 表
+  await client.query(`
     CREATE TABLE IF NOT EXISTS sourcemaps (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       dsn TEXT NOT NULL,
       version TEXT NOT NULL,
       filename TEXT NOT NULL,
       content TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(dsn, version, filename)
     )
   `);
 
   // 创建索引
-  db.run('CREATE INDEX IF NOT EXISTS idx_errors_dsn_timestamp ON errors(dsn, timestamp)');
-  db.run('CREATE INDEX IF NOT EXISTS idx_errors_fingerprint ON errors(fingerprint)');
-  db.run('CREATE INDEX IF NOT EXISTS idx_performance_dsn_timestamp ON performance(dsn, timestamp)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_errors_dsn_timestamp ON errors(dsn, timestamp)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_errors_fingerprint ON errors(fingerprint)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_performance_dsn_timestamp ON performance(dsn, timestamp)');
+  
+  console.log('[DB] Tables created/verified');
 }
 
-/** 保存数据库到文件 */
+/** 获取数据库连接池 */
+export function getDB(): Pool | null {
+  return pool;
+}
+
+/** 执行查询 */
+export async function query(sql: string, params?: (string | number | null)[]): Promise<QueryResult> {
+  if (!pool) throw new Error('Database not initialized');
+  return pool.query(sql, params);
+}
+
+/** 关闭数据库连接 */
+export async function closeDB(): Promise<void> {
+  if (pool) {
+    await pool.end();
+    pool = null;
+    console.log('[DB] Connection closed');
+  }
+}
+
+// 兼容旧代码的空函数
 export function saveDB(): void {
-  if (!db) return;
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_PATH, buffer);
-}
-
-/** 获取数据库实例 */
-export function getDB(): Database | null {
-  return db;
+  // PostgreSQL 自动持久化，无需手动保存
 }

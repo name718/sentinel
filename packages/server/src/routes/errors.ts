@@ -5,38 +5,34 @@ import { Router, Request, Response } from 'express';
 import { getDB } from '../db';
 import { parseStack } from '../services/sourcemap';
 import { normalizeMessage, extractStackSignature } from '../services/error-aggregation';
-import type { SqlValue } from 'sql.js';
 
 const router: Router = Router();
 
-/** 数据库行类型 */
-type DbRow = SqlValue[];
-
 /** 解析错误记录 */
-function parseErrorRow(row: DbRow) {
+function parseErrorRow(row: Record<string, unknown>) {
   return {
-    id: row[0] as number,
-    dsn: row[1] as string,
-    type: row[2] as string,
-    message: row[3] as string,
-    normalizedMessage: row[4] as string | null,
-    stack: row[5] as string | null,
-    filename: row[6] as string | null,
-    lineno: row[7] as number | null,
-    colno: row[8] as number | null,
-    url: row[9] as string,
-    breadcrumbs: row[10] ? JSON.parse(row[10] as string) : [],
-    sessionReplay: row[11] ? JSON.parse(row[11] as string) : null,
-    timestamp: row[12] as number,
-    firstSeen: row[13] as number | null,
-    fingerprint: row[14] as string | null,
-    count: row[15] as number,
-    createdAt: row[16] as string
+    id: row.id,
+    dsn: row.dsn,
+    type: row.type,
+    message: row.message,
+    normalizedMessage: row.normalized_message,
+    stack: row.stack,
+    filename: row.filename,
+    lineno: row.lineno,
+    colno: row.colno,
+    url: row.url,
+    breadcrumbs: row.breadcrumbs || [],
+    sessionReplay: row.session_replay || null,
+    timestamp: Number(row.timestamp),
+    firstSeen: row.first_seen ? Number(row.first_seen) : null,
+    fingerprint: row.fingerprint,
+    count: row.count,
+    createdAt: row.created_at
   };
 }
 
 /** 错误列表查询 */
-router.get('/errors', (req: Request, res: Response) => {
+router.get('/errors', async (req: Request, res: Response) => {
   const { dsn, startTime, endTime, type, page = '1', pageSize = '20' } = req.query;
   
   if (!dsn) {
@@ -49,33 +45,41 @@ router.get('/errors', (req: Request, res: Response) => {
   }
 
   try {
-    let sql = 'SELECT * FROM errors WHERE dsn = ?';
+    let sql = 'SELECT * FROM errors WHERE dsn = $1';
+    let countSql = 'SELECT COUNT(*) FROM errors WHERE dsn = $1';
     const params: (string | number)[] = [dsn as string];
+    let paramIndex = 2;
 
     if (startTime) {
-      sql += ' AND timestamp >= ?';
+      sql += ` AND timestamp >= $${paramIndex}`;
+      countSql += ` AND timestamp >= $${paramIndex}`;
       params.push(Number(startTime));
+      paramIndex++;
     }
     if (endTime) {
-      sql += ' AND timestamp <= ?';
+      sql += ` AND timestamp <= $${paramIndex}`;
+      countSql += ` AND timestamp <= $${paramIndex}`;
       params.push(Number(endTime));
+      paramIndex++;
     }
     if (type) {
-      sql += ' AND type = ?';
+      sql += ` AND type = $${paramIndex}`;
+      countSql += ` AND type = $${paramIndex}`;
       params.push(type as string);
+      paramIndex++;
     }
 
     // 获取总数
-    const countResult = db.exec(sql.replace('SELECT *', 'SELECT COUNT(*) as total'), params);
-    const total = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+    const countResult = await db.query(countSql, params);
+    const total = parseInt(countResult.rows[0].count, 10);
 
     // 分页
     const offset = (Number(page) - 1) * Number(pageSize);
-    sql += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
+    sql += ` ORDER BY timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(Number(pageSize), offset);
 
-    const result = db.exec(sql, params);
-    const list = result.length > 0 ? result[0].values.map(parseErrorRow) : [];
+    const result = await db.query(sql, params);
+    const list = result.rows.map(parseErrorRow);
 
     res.json({ total, list, page: Number(page), pageSize: Number(pageSize) });
   } catch (error) {
@@ -95,13 +99,13 @@ router.get('/errors/:id', async (req: Request, res: Response) => {
   }
 
   try {
-    const result = db.exec('SELECT * FROM errors WHERE id = ?', [Number(id)]);
+    const result = await db.query('SELECT * FROM errors WHERE id = $1', [Number(id)]);
     
-    if (result.length === 0 || result[0].values.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Error not found' });
     }
 
-    const errorRecord = parseErrorRow(result[0].values[0]);
+    const errorRecord = parseErrorRow(result.rows[0]);
     const responseData: Record<string, unknown> = { ...errorRecord, parsedStack: null };
 
     // 如果有堆栈信息，尝试解析 SourceMap
@@ -125,7 +129,7 @@ router.get('/errors/:id', async (req: Request, res: Response) => {
 });
 
 /** 错误趋势统计 */
-router.get('/errors/stats/trend', (req: Request, res: Response) => {
+router.get('/errors/stats/trend', async (req: Request, res: Response) => {
   const { dsn, startTime, endTime } = req.query;
   
   if (!dsn) {
@@ -140,28 +144,32 @@ router.get('/errors/stats/trend', (req: Request, res: Response) => {
   try {
     let sql = `
       SELECT 
-        strftime('%Y-%m-%d %H:00:00', datetime(timestamp/1000, 'unixepoch')) as time_bucket,
+        TO_CHAR(TO_TIMESTAMP(timestamp / 1000), 'YYYY-MM-DD HH24:00:00') as time_bucket,
         COUNT(*) as count
       FROM errors 
-      WHERE dsn = ?
+      WHERE dsn = $1
     `;
     const params: (string | number)[] = [dsn as string];
+    let paramIndex = 2;
 
     if (startTime) {
-      sql += ' AND timestamp >= ?';
+      sql += ` AND timestamp >= $${paramIndex}`;
       params.push(Number(startTime));
+      paramIndex++;
     }
     if (endTime) {
-      sql += ' AND timestamp <= ?';
+      sql += ` AND timestamp <= $${paramIndex}`;
       params.push(Number(endTime));
+      paramIndex++;
     }
 
     sql += ' GROUP BY time_bucket ORDER BY time_bucket';
 
-    const result = db.exec(sql, params);
-    const trend = result.length > 0 
-      ? result[0].values.map((row: DbRow) => ({ time: row[0], count: row[1] })) 
-      : [];
+    const result = await db.query(sql, params);
+    const trend = result.rows.map(row => ({ 
+      time: row.time_bucket, 
+      count: parseInt(row.count, 10) 
+    }));
 
     res.json({ trend });
   } catch (error) {
@@ -171,7 +179,7 @@ router.get('/errors/stats/trend', (req: Request, res: Response) => {
 });
 
 /** 错误分组统计 */
-router.get('/errors/stats/groups', (req: Request, res: Response) => {
+router.get('/errors/stats/groups', async (req: Request, res: Response) => {
   const { dsn, startTime, endTime, limit = '20' } = req.query;
   
   if (!dsn) {
@@ -192,33 +200,36 @@ router.get('/errors/stats/groups', (req: Request, res: Response) => {
         MAX(timestamp) as last_seen,
         COUNT(DISTINCT url) as affected_urls
       FROM errors 
-      WHERE dsn = ?
+      WHERE dsn = $1
     `;
     const params: (string | number)[] = [dsn as string];
+    let paramIndex = 2;
 
     if (startTime) {
-      sql += ' AND timestamp >= ?';
+      sql += ` AND timestamp >= $${paramIndex}`;
       params.push(Number(startTime));
+      paramIndex++;
     }
     if (endTime) {
-      sql += ' AND timestamp <= ?';
+      sql += ` AND timestamp <= $${paramIndex}`;
       params.push(Number(endTime));
+      paramIndex++;
     }
 
-    sql += ' GROUP BY fingerprint ORDER BY total_count DESC LIMIT ?';
+    sql += ` GROUP BY fingerprint, type, message ORDER BY total_count DESC LIMIT $${paramIndex}`;
     params.push(Number(limit));
 
-    const result = db.exec(sql, params);
-    const groups = result.length > 0 ? result[0].values.map((row: DbRow) => ({
-      fingerprint: row[0],
-      type: row[1],
-      message: row[2],
-      normalizedMessage: normalizeMessage(row[2] as string),
-      totalCount: row[3],
-      firstSeen: row[4],
-      lastSeen: row[5],
-      affectedUrls: row[6]
-    })) : [];
+    const result = await db.query(sql, params);
+    const groups = result.rows.map(row => ({
+      fingerprint: row.fingerprint,
+      type: row.type,
+      message: row.message,
+      normalizedMessage: normalizeMessage(row.message),
+      totalCount: parseInt(row.total_count, 10),
+      firstSeen: Number(row.first_seen),
+      lastSeen: Number(row.last_seen),
+      affectedUrls: parseInt(row.affected_urls, 10)
+    }));
 
     res.json({ groups });
   } catch (error) {
@@ -228,7 +239,7 @@ router.get('/errors/stats/groups', (req: Request, res: Response) => {
 });
 
 /** 获取错误堆栈签名 */
-router.get('/errors/:id/signature', (req: Request, res: Response) => {
+router.get('/errors/:id/signature', async (req: Request, res: Response) => {
   const { id } = req.params;
   
   const db = getDB();
@@ -237,13 +248,13 @@ router.get('/errors/:id/signature', (req: Request, res: Response) => {
   }
 
   try {
-    const result = db.exec('SELECT stack FROM errors WHERE id = ?', [Number(id)]);
+    const result = await db.query('SELECT stack FROM errors WHERE id = $1', [Number(id)]);
     
-    if (result.length === 0 || result[0].values.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Error not found' });
     }
 
-    const stack = result[0].values[0][0] as string | null;
+    const stack = result.rows[0].stack;
     const signature = stack ? extractStackSignature(stack) : null;
     
     res.json({ signature });
@@ -254,7 +265,7 @@ router.get('/errors/:id/signature', (req: Request, res: Response) => {
 });
 
 /** 获取同一指纹的所有错误实例（用于 Session 对比） */
-router.get('/errors/group/:fingerprint/sessions', (req: Request, res: Response) => {
+router.get('/errors/group/:fingerprint/sessions', async (req: Request, res: Response) => {
   const { fingerprint } = req.params;
   const { dsn, limit = '10' } = req.query;
   
@@ -268,16 +279,12 @@ router.get('/errors/group/:fingerprint/sessions', (req: Request, res: Response) 
   }
 
   try {
-    const sql = `
-      SELECT * FROM errors 
-      WHERE dsn = ? AND fingerprint = ?
-      ORDER BY timestamp DESC
-      LIMIT ?
-    `;
+    const result = await db.query(
+      `SELECT * FROM errors WHERE dsn = $1 AND fingerprint = $2 ORDER BY timestamp DESC LIMIT $3`,
+      [dsn as string, fingerprint, Number(limit)]
+    );
     
-    const result = db.exec(sql, [dsn as string, fingerprint, Number(limit)]);
-    const sessions = result.length > 0 ? result[0].values.map(parseErrorRow) : [];
-
+    const sessions = result.rows.map(parseErrorRow);
     res.json({ sessions });
   } catch (error) {
     console.error('[Errors] Sessions query failed:', error);

@@ -2,9 +2,9 @@
  * 数据上报路由
  */
 import { Router, Request, Response } from 'express';
-import { getDB, saveDB } from '../db';
+import { getDB } from '../db';
 import { generateFingerprint } from '../services/error-aggregation';
-import type { Database } from 'sql.js';
+import { Pool } from 'pg';
 
 const router: Router = Router();
 
@@ -19,6 +19,7 @@ interface ErrorEvent {
   timestamp: number;
   url: string;
   breadcrumbs?: unknown[];
+  sessionReplay?: unknown;
 }
 
 /** 性能数据 */
@@ -45,7 +46,7 @@ interface ReportBody {
 }
 
 /** 数据上报接口 */
-router.post('/report', (req: Request, res: Response) => {
+router.post('/report', async (req: Request, res: Response) => {
   const body = req.body as ReportBody;
   
   if (!body.dsn) {
@@ -66,15 +67,14 @@ router.post('/report', (req: Request, res: Response) => {
 
     for (const event of body.events) {
       if (isErrorEvent(event)) {
-        saveErrorEvent(db, body.dsn, event);
+        await saveErrorEvent(db, body.dsn, event);
         errorCount++;
       } else if (isPerformanceData(event)) {
-        savePerformanceData(db, body.dsn, event);
+        await savePerformanceData(db, body.dsn, event);
         perfCount++;
       }
     }
     
-    saveDB();
     res.json({ 
       success: true, 
       count: body.events.length,
@@ -104,35 +104,34 @@ function isPerformanceData(event: unknown): event is PerformanceData {
 }
 
 /** 保存错误事件 */
-function saveErrorEvent(db: Database, dsn: string, event: ErrorEvent): void {
+async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise<void> {
   const { fingerprint, normalizedMessage } = generateFingerprint(event);
   
   // 检查是否已存在相同指纹的错误
-  const existing = db.exec(
-    'SELECT id, count FROM errors WHERE dsn = ? AND fingerprint = ?',
+  const existing = await db.query(
+    'SELECT id, count FROM errors WHERE dsn = $1 AND fingerprint = $2',
     [dsn, fingerprint]
   );
   
-  if (existing.length > 0 && existing[0].values.length > 0) {
+  if (existing.rows.length > 0) {
     // 更新计数和最后出现时间
-    const id = existing[0].values[0][0];
-    const count = (existing[0].values[0][1] as number) + 1;
-    db.run(
-      'UPDATE errors SET count = ?, timestamp = ?, breadcrumbs = ?, session_replay = ? WHERE id = ?',
+    const { id, count } = existing.rows[0];
+    await db.query(
+      'UPDATE errors SET count = $1, timestamp = $2, breadcrumbs = $3, session_replay = $4 WHERE id = $5',
       [
-        count, 
+        count + 1, 
         event.timestamp, 
         event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
-        (event as any).sessionReplay ? JSON.stringify((event as any).sessionReplay) : null,
+        event.sessionReplay ? JSON.stringify(event.sessionReplay) : null,
         id
       ]
     );
-    console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count}`);
+    console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count + 1}`);
   } else {
     // 插入新记录
-    db.run(`
+    await db.query(`
       INSERT INTO errors (dsn, type, message, stack, filename, lineno, colno, url, breadcrumbs, session_replay, timestamp, fingerprint, normalized_message)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `, [
       dsn,
       event.type,
@@ -143,7 +142,7 @@ function saveErrorEvent(db: Database, dsn: string, event: ErrorEvent): void {
       event.colno || null,
       event.url,
       event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
-      (event as any).sessionReplay ? JSON.stringify((event as any).sessionReplay) : null,
+      event.sessionReplay ? JSON.stringify(event.sessionReplay) : null,
       event.timestamp,
       fingerprint,
       normalizedMessage
@@ -153,10 +152,10 @@ function saveErrorEvent(db: Database, dsn: string, event: ErrorEvent): void {
 }
 
 /** 保存性能数据 */
-function savePerformanceData(db: Database, dsn: string, data: PerformanceData): void {
-  db.run(`
+async function savePerformanceData(db: Pool, dsn: string, data: PerformanceData): Promise<void> {
+  await db.query(`
     INSERT INTO performance (dsn, fp, fcp, lcp, fid, cls, ttfb, dom_ready, load, long_tasks, resources, web_vitals_score, url, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
   `, [
     dsn,
     data.fp ?? null,

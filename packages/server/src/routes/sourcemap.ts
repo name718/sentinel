@@ -4,7 +4,7 @@
 import { Router, Request, Response, RequestHandler } from 'express';
 import multer from 'multer';
 import { saveSourceMap, listSourceMaps } from '../services/sourcemap';
-import { saveDB, getDB } from '../db';
+import { getDB } from '../db';
 
 const router: Router = Router();
 
@@ -24,7 +24,7 @@ const upload = multer({
 });
 
 /** 上传单个 SourceMap */
-const uploadSingle: RequestHandler = (req: Request, res: Response) => {
+const uploadSingle: RequestHandler = async (req: Request, res: Response) => {
   const { dsn, version } = req.body;
   const file = req.file;
 
@@ -45,10 +45,9 @@ const uploadSingle: RequestHandler = (req: Request, res: Response) => {
     const content = file.buffer.toString('utf-8');
     JSON.parse(content); // 验证 JSON
 
-    const success = saveSourceMap(dsn, version, file.originalname, content);
+    const success = await saveSourceMap(dsn, version, file.originalname, content);
     
     if (success) {
-      saveDB();
       res.json({
         success: true,
         message: 'SourceMap uploaded successfully',
@@ -65,7 +64,7 @@ const uploadSingle: RequestHandler = (req: Request, res: Response) => {
 };
 
 /** 批量上传 SourceMap */
-const uploadBatch: RequestHandler = (req: Request, res: Response) => {
+const uploadBatch: RequestHandler = async (req: Request, res: Response) => {
   const { dsn, version } = req.body;
   const files = req.files as Express.Multer.File[];
 
@@ -89,7 +88,7 @@ const uploadBatch: RequestHandler = (req: Request, res: Response) => {
       const content = file.buffer.toString('utf-8');
       JSON.parse(content);
       
-      const success = saveSourceMap(dsn, version, file.originalname, content);
+      const success = await saveSourceMap(dsn, version, file.originalname, content);
       results.push({ filename: file.originalname, success });
     } catch {
       results.push({
@@ -99,8 +98,6 @@ const uploadBatch: RequestHandler = (req: Request, res: Response) => {
       });
     }
   }
-
-  saveDB();
 
   const successCount = results.filter(r => r.success).length;
   res.json({
@@ -116,7 +113,7 @@ router.post('/sourcemap', upload.single('file') as RequestHandler, uploadSingle)
 router.post('/sourcemap/batch', upload.array('files', 20) as RequestHandler, uploadBatch);
 
 /** 获取 SourceMap 列表 */
-router.get('/sourcemap', (req: Request, res: Response) => {
+router.get('/sourcemap', async (req: Request, res: Response) => {
   const { dsn } = req.query;
 
   if (!dsn) {
@@ -124,12 +121,12 @@ router.get('/sourcemap', (req: Request, res: Response) => {
     return;
   }
 
-  const list = listSourceMaps(dsn as string);
+  const list = await listSourceMaps(dsn as string);
   res.json({ list });
 });
 
 /** 删除 SourceMap */
-router.delete('/sourcemap', (req: Request, res: Response) => {
+router.delete('/sourcemap', async (req: Request, res: Response) => {
   const { dsn, version, filename } = req.query;
 
   if (!dsn || !version || !filename) {
@@ -144,11 +141,10 @@ router.delete('/sourcemap', (req: Request, res: Response) => {
   }
 
   try {
-    db.run(
-      'DELETE FROM sourcemaps WHERE dsn = ? AND version = ? AND filename = ?',
+    await db.query(
+      'DELETE FROM sourcemaps WHERE dsn = $1 AND version = $2 AND filename = $3',
       [dsn, version, filename]
     );
-    saveDB();
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to delete SourceMap' });

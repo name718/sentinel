@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@monitor/plugins": "workspace:*",
     "@vitejs/plugin-vue": "^6.0.3",
     "terser": "^5.44.1",
     "typescript": "^5.9.3",

@@ -42,7 +42,7 @@
 #### 1. 用户认证 & 权限系统
 
 ##### Phase 1: 数据库 & 基础设施
-- [ ] 1.1 创建 users 表
+- [ ] 1.1 创建 users 表 -- done
   - 字段: id, email, password_hash, name, role, created_at, updated_at
   - 测试: 表创建成功、CRUD 操作正常
 - [ ] 1.2 密码加密服务 (bcrypt)

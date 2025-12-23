@@ -1,0 +1,159 @@
+{
+  "name": "monitor-vscode",
+  "displayName": "Frontend Monitor",
+  "description": "前端监控系统 VS Code 插件 - 实时查看错误，一键跳转到代码",
+  "version": "1.0.0",
+  "publisher": "monitor",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Debuggers"
+  ],
+  "keywords": [
+    "monitor",
+    "error",
+    "frontend",
+    "debug",
+    "sourcemap"
+  ],
+  "icon": "images/icon.png",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "monitor.refresh",
+        "title": "刷新错误列表",
+        "icon": "$(refresh)",
+        "category": "Monitor"
+      },
+      {
+        "command": "monitor.openError",
+        "title": "打开错误位置",
+        "icon": "$(go-to-file)",
+        "category": "Monitor"
+      },
+      {
+        "command": "monitor.configure",
+        "title": "配置监控服务器",
+        "icon": "$(gear)",
+        "category": "Monitor"
+      },
+      {
+        "command": "monitor.openDashboard",
+        "title": "打开 Dashboard",
+        "icon": "$(link-external)",
+        "category": "Monitor"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "monitor",
+          "title": "Frontend Monitor",
+          "icon": "$(bug)"
+        }
+      ]
+    },
+    "views": {
+      "monitor": [
+        {
+          "id": "monitorErrors",
+          "name": "错误列表",
+          "icon": "$(bug)",
+          "contextualTitle": "错误监控"
+        },
+        {
+          "id": "monitorStats",
+          "name": "统计概览",
+          "icon": "$(graph)",
+          "contextualTitle": "统计信息"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "monitorErrors",
+        "contents": "未连接到监控服务器\n[配置服务器](command:monitor.configure)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "monitor.refresh",
+          "when": "view == monitorErrors",
+          "group": "navigation"
+        },
+        {
+          "command": "monitor.configure",
+          "when": "view == monitorErrors",
+          "group": "navigation"
+        },
+        {
+          "command": "monitor.openDashboard",
+          "when": "view == monitorErrors",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "monitor.openError",
+          "when": "view == monitorErrors && viewItem == error",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Frontend Monitor",
+      "properties": {
+        "monitor.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "监控服务器地址"
+        },
+        "monitor.dsn": {
+          "type": "string",
+          "default": "",
+          "description": "项目标识符 (DSN)"
+        },
+        "monitor.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "自动刷新错误列表"
+        },
+        "monitor.refreshInterval": {
+          "type": "number",
+          "default": 30,
+          "description": "自动刷新间隔（秒）"
+        },
+        "monitor.pathMapping": {
+          "type": "object",
+          "default": {},
+          "description": "路径映射配置，将远程路径映射到本地路径"
+        },
+        "monitor.showInlineDecorations": {
+          "type": "boolean",
+          "default": true,
+          "description": "在代码中显示错误标记"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.0"
+  }
+}

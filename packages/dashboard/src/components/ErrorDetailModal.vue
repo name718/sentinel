@@ -9,6 +9,9 @@ interface ErrorDetail {
   count: number;
   url: string;
   stack?: string;
+  filename?: string;
+  lineno?: number;
+  colno?: number;
   parsedStack?: Array<{
     file: string;
     line: number;
@@ -43,6 +46,15 @@ const activeTab = ref<'details' | 'replay'>('details');
 
 function formatTime(timestamp: number) {
   return new Date(timestamp).toLocaleString('zh-CN');
+}
+
+/**
+ * 在 VS Code 中打开文件
+ */
+function openInVSCode(file: string, line: number, column: number) {
+  // 使用 VS Code URL Scheme
+  const url = `vscode://file/${file}:${line}:${column}`;
+  window.open(url, '_blank');
 }
 </script>
 
@@ -100,18 +112,49 @@ function formatTime(timestamp: number) {
             <label>🗺️ SourceMap 解析结果</label>
             <div class="parsed-stack">
               <div class="frame" v-for="(frame, i) in error.parsedStack" :key="i">
-                <template v-if="frame.originalFile">
-                  <div class="frame-original">
+                <div class="frame-row">
+                  <div class="frame-original" v-if="frame.originalFile">
                     📍 {{ frame.originalFile }}:{{ frame.originalLine }}:{{ frame.originalColumn }}
                     <span v-if="frame.originalName" class="frame-name">({{ frame.originalName }})</span>
                   </div>
-                  <div class="frame-compiled">← {{ frame.file }}:{{ frame.line }}:{{ frame.column }}</div>
-                </template>
-                <template v-else>
-                  <div class="frame-compiled">{{ frame.file }}:{{ frame.line }}:{{ frame.column }}</div>
-                </template>
+                  <div class="frame-compiled" v-else>
+                    {{ frame.file }}:{{ frame.line }}:{{ frame.column }}
+                  </div>
+                  <button 
+                    class="btn-open-ide"
+                    @click="openInVSCode(
+                      frame.originalFile || frame.file, 
+                      frame.originalLine || frame.line, 
+                      frame.originalColumn || frame.column
+                    )"
+                    title="在 VS Code 中打开"
+                  >
+                    📂 打开
+                  </button>
+                </div>
+                <div v-if="frame.originalFile" class="frame-compiled">
+                  ← {{ frame.file }}:{{ frame.line }}:{{ frame.column }}
+                </div>
               </div>
             </div>
+          </div>
+          
+          <!-- 没有 parsedStack 时，显示简单的打开按钮 -->
+          <div class="detail-section" v-if="!error.parsedStack?.length && error.filename">
+            <label>📍 错误位置</label>
+            <div class="error-location">
+              <span class="location-text">
+                {{ error.filename }}:{{ error.lineno }}:{{ error.colno }}
+              </span>
+              <button 
+                class="btn-open-ide"
+                @click="openInVSCode(error.filename!, error.lineno || 1, error.colno || 1)"
+                title="在 VS Code 中打开"
+              >
+                📂 打开
+              </button>
+            </div>
+            <p class="hint">💡 上传 SourceMap 可以看到原始源码位置</p>
           </div>
           <div class="detail-section" v-if="error.breadcrumbs?.length">
             <label>用户行为轨迹</label>
@@ -293,9 +336,51 @@ function formatTime(timestamp: number) {
   border-bottom: 1px solid var(--border);
 }
 .frame:last-child { border-bottom: none; }
+.frame-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
 .frame-original { color: #4ade80; }
 .frame-compiled { color: var(--text-secondary); font-size: 11px; }
 .frame-name { color: #fbbf24; }
+.btn-open-ide {
+  padding: 4px 10px;
+  background: var(--bg-lighter);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-open-ide:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+.error-location {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.location-text {
+  font-family: Monaco, monospace;
+  font-size: 13px;
+  color: var(--text);
+}
+.hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 8px 0 0 0;
+}
 .breadcrumbs { max-height: 200px; overflow-y: auto; }
 .crumb {
   display: flex;

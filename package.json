@@ -4,8 +4,11 @@
   "private": true,
   "description": "前端错误与异常监控系统",
   "scripts": {
+    "dev": "pnpm --parallel --filter @monitor/server --filter @monitor/demo-app --filter @monitor/dashboard --filter @monitor/sdk dev",
     "dev:sdk": "pnpm --filter @monitor/sdk dev",
     "dev:server": "pnpm --filter @monitor/server dev",
+    "dev:demo": "pnpm --filter @monitor/demo-app dev",
+    "dev:dashboard": "pnpm --filter @monitor/dashboard dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "eslint packages --ext .ts"

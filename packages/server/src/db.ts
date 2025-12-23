@@ -106,10 +106,24 @@ async function createTables(client: PoolClient): Promise<void> {
     )
   `);
 
+  // 用户表
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      role VARCHAR(20) DEFAULT 'developer',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // 创建索引
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_dsn_timestamp ON errors(dsn, timestamp)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_fingerprint ON errors(fingerprint)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_performance_dsn_timestamp ON performance(dsn, timestamp)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
   
   console.log('[DB] Tables created/verified');
 }

@@ -40,10 +40,71 @@
 ### 🔴 P0 - 核心必备（1-2 周）
 
 #### 1. 用户认证 & 权限系统
-- [ ] 用户注册/登录（JWT）
+
+##### Phase 1: 数据库 & 基础设施
+- [ ] 1.1 创建 users 表
+  - 字段: id, email, password_hash, name, role, created_at, updated_at
+  - 测试: 表创建成功、CRUD 操作正常
+- [ ] 1.2 密码加密服务 (bcrypt)
+  - hash(password) 加密
+  - verify(password, hash) 验证
+  - 测试: 加密/验证函数正确工作
+- [ ] 1.3 JWT 服务
+  - sign(payload) 生成 token
+  - verify(token) 验证 token
+  - 配置: JWT_SECRET 环境变量
+  - 测试: token 生成/验证/过期处理
+
+##### Phase 2: 后端 API
+- [ ] 1.4 注册接口 `POST /api/auth/register`
+  - 入参: email, password, name
+  - 验证: 邮箱格式、密码强度(≥8位)、邮箱唯一性
+  - 返回: { user, token }
+  - 测试: 正常注册、重复邮箱、无效输入
+- [ ] 1.5 登录接口 `POST /api/auth/login`
+  - 入参: email, password
+  - 验证: 邮箱密码匹配
+  - 返回: { user, token }
+  - 测试: 正确登录、错误密码、不存在用户
+- [ ] 1.6 获取当前用户 `GET /api/auth/me`
+  - 需要: Authorization: Bearer <token>
+  - 返回: { user } (不含密码)
+  - 测试: 有效token、无效token、无token
+- [ ] 1.7 认证中间件 authMiddleware
+  - 解析 Authorization header
+  - 验证 JWT 并注入 req.user
+  - 测试: 保护路由正确拦截未认证请求
+
+##### Phase 3: 前端
+- [ ] 1.8 Token 存储 & 请求拦截
+  - localStorage 存储 token
+  - axios/fetch 拦截器自动添加 header
+  - 测试: token 持久化、自动附加
+- [ ] 1.9 登录页面 `/login`
+  - 邮箱密码表单 + 验证
+  - 调用登录 API
+  - 成功后跳转 dashboard
+  - 测试: 表单验证、登录流程
+- [ ] 1.10 注册页面 `/register`
+  - 邮箱、密码、确认密码表单
+  - 调用注册 API
+  - 成功后跳转 dashboard
+  - 测试: 表单验证、注册流程
+- [ ] 1.11 路由守卫
+  - 未登录 → 重定向 /login
+  - 已登录访问 /login → 重定向 /dashboard
+  - 测试: 路由保护正确工作
+- [ ] 1.12 用户状态管理 (useAuth composable)
+  - 全局用户状态
+  - 登出功能 (清除 token)
+  - 测试: 状态正确更新
+
+##### Phase 4: 角色权限 (后续)
 - [ ] 角色权限（管理员、开发者、只读）
 - [ ] OAuth 集成（GitHub、GitLab、企业 SSO）
 - [ ] API Token 管理
+
+**实现顺序**: 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 1.9 → 1.10 → 1.11 → 1.12
 
 #### 2. 多项目/多租户支持
 - [ ] 项目 CRUD

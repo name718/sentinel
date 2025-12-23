@@ -10,12 +10,16 @@ import PerformancePage from './views/PerformancePage.vue';
 import { useErrorData } from './composables/useErrorData';
 import { usePerformanceData } from './composables/usePerformanceData';
 import { useErrorFilters } from './composables/useErrorFilters';
+import { useTheme } from './composables/useTheme';
 
 const API_BASE = '/api';
 const DSN = 'demo-app';
 
 const activeTab = ref<'overview' | 'errors' | 'performance'>('overview');
 const timeRange = ref<'1h' | '24h' | '7d' | '30d'>('24h');
+
+// 主题管理
+const { resolvedTheme, toggleTheme, initTheme } = useTheme();
 
 // Session 对比状态
 const showSessionCompare = ref(false);
@@ -111,7 +115,9 @@ onMounted(() => {
       <TopBar 
         :timeRange="timeRange" 
         :dsn="DSN"
-        @update:timeRange="(range) => timeRange = range as typeof timeRange" 
+        :theme="resolvedTheme"
+        @update:timeRange="(range) => timeRange = range as typeof timeRange"
+        @toggleTheme="toggleTheme"
       />
       
       <div class="page-content">
@@ -169,9 +175,12 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-:root {
+/* 深色主题（默认） */
+:root,
+:root[data-theme="dark"] {
   --primary: #6366f1;
   --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -182,6 +191,35 @@ onMounted(() => {
   --text-secondary: #94a3b8;
   --border: #334155;
   --sidebar-width: 240px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --card-bg: #1e293b;
+}
+
+/* 浅色主题 */
+:root[data-theme="light"] {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #a5b4fc;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+  --bg-light: #ffffff;
+  --bg-lighter: #f1f5f9;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --sidebar-width: 240px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --card-bg: #ffffff;
+}
+
+/* 主题切换过渡 */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 body {

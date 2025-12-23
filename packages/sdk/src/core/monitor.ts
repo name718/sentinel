@@ -48,7 +48,9 @@ import type {
   UserInfo,
   CustomContext,
   DeviceInfo,
-  PerformanceData
+  PerformanceData,
+  NetworkQualityData,
+  NetworkChangeEvent
 } from '../types';
 import { Reporter } from './reporter';
 import { ErrorCatcher } from './error-catcher';
@@ -56,6 +58,7 @@ import { ResourceMonitor } from './resource-monitor';
 import { BehaviorTracker } from './behavior-tracker';
 import { PerformanceMonitor } from './performance-monitor';
 import { SessionRecorder } from './session-recorder';
+import { NetworkMonitor } from './network-monitor';
 
 /** 默认配置 */
 const DEFAULT_CONFIG: Partial<MonitorConfig> = {
@@ -64,6 +67,7 @@ const DEFAULT_CONFIG: Partial<MonitorConfig> = {
   enableError: true,
   enablePerformance: true,
   enableBehavior: true,
+  enableNetworkMonitor: true,
   batchSize: 10,
   reportInterval: 5000
 };
@@ -80,6 +84,7 @@ export class Monitor {
   private behaviorTracker: BehaviorTracker | null = null;
   private performanceMonitor: PerformanceMonitor | null = null;
   private sessionRecorder: SessionRecorder | null = null;
+  private networkMonitor: NetworkMonitor | null = null;
   
   /** 用户信息 */
   private user: UserInfo | null = null;
@@ -158,6 +163,19 @@ export class Monitor {
         scrollSampleInterval: this.config.sessionReplay?.scrollSampleInterval,
       });
       this.sessionRecorder.start();
+    }
+
+    // 初始化网络质量监控
+    if (this.config.enableNetworkMonitor !== false) {
+      this.networkMonitor = new NetworkMonitor({
+        slowThreshold: this.config.networkMonitor?.slowThreshold,
+        reportInterval: this.config.networkMonitor?.reportInterval,
+        bandwidthSampleSize: this.config.networkMonitor?.bandwidthSampleSize,
+        onBreadcrumb: (crumb) => this.addBreadcrumb(crumb),
+        onNetworkChange: (event) => this.handleNetworkChange(event),
+        onNetworkQuality: (data) => this.handleNetworkQuality(data)
+      });
+      this.networkMonitor.install();
     }
 
     // 自动检测设备信息
@@ -373,6 +391,33 @@ export class Monitor {
     this.report(errorEvent);
   }
 
+  /** 处理网络变化事件 */
+  private handleNetworkChange(event: NetworkChangeEvent): void {
+    // 网络变化作为重要事件记录
+    console.log('[Monitor] Network change:', event.changeType, event.current.type);
+  }
+
+  /** 处理网络质量数据 */
+  private handleNetworkQuality(data: NetworkQualityData): void {
+    // 将网络质量数据作为特殊类型上报
+    // 通过 breadcrumb 记录网络状态摘要
+    this.addBreadcrumb({
+      type: 'fetch',
+      category: 'network-quality',
+      message: `Network: ${data.networkInfo.type}, Requests: ${data.requestStats.total}, FailRate: ${(data.requestStats.failureRate * 100).toFixed(1)}%`,
+      data: {
+        networkType: data.networkInfo.type,
+        online: data.networkInfo.online,
+        totalRequests: data.requestStats.total,
+        failedRequests: data.requestStats.failed,
+        slowRequests: data.requestStats.slow,
+        avgDuration: Math.round(data.requestStats.avgDuration),
+        bandwidth: data.bandwidthEstimate?.bandwidth
+      },
+      timestamp: data.timestamp
+    });
+  }
+
   /** 是否已初始化 */
   isInitialized(): boolean {
     return this.initialized;
@@ -482,18 +527,35 @@ export class Monitor {
     return this.reporter;
   }
 
+  /** 获取当前网络信息 */
+  getNetworkInfo() {
+    return this.networkMonitor?.getNetworkInfo() || null;
+  }
+
+  /** 获取请求统计 */
+  getRequestStats() {
+    return this.networkMonitor?.getRequestStats() || null;
+  }
+
+  /** 获取带宽估算 */
+  getBandwidthEstimate() {
+    return this.networkMonitor?.getBandwidthEstimate() || null;
+  }
+
   /** 销毁实例 */
   destroy(): void {
     this.errorCatcher?.uninstall();
     this.resourceMonitor?.uninstall();
     this.behaviorTracker?.uninstall();
     this.performanceMonitor?.stop();
+    this.networkMonitor?.uninstall();
     this.reporter?.destroy();
     
     this.errorCatcher = null;
     this.resourceMonitor = null;
     this.behaviorTracker = null;
     this.performanceMonitor = null;
+    this.networkMonitor = null;
     this.reporter = null;
     this.config = null;
     this.breadcrumbs = [];

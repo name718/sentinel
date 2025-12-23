@@ -18,6 +18,10 @@ export interface MonitorConfig {
   enablePerformance?: boolean;
   /** 启用行为追踪，默认 true */
   enableBehavior?: boolean;
+  /** 启用网络质量监控，默认 true */
+  enableNetworkMonitor?: boolean;
+  /** 网络监控配置 */
+  networkMonitor?: NetworkMonitorConfig;
   /** 启用会话录制，默认 false */
   enableSessionReplay?: boolean;
   /** 会话录制配置 */
@@ -34,6 +38,16 @@ export interface MonitorConfig {
   ignoreErrors?: (string | RegExp)[];
   /** 上报前的钩子，返回 false 则不上报 */
   beforeSend?: (event: ErrorEvent | PerformanceData) => boolean | ErrorEvent | PerformanceData | null;
+}
+
+/** 网络监控配置 */
+export interface NetworkMonitorConfig {
+  /** 慢请求阈值 (ms)，默认 3000 */
+  slowThreshold?: number;
+  /** 上报间隔 (ms)，默认 60000 */
+  reportInterval?: number;
+  /** 带宽采样数量，默认 5 */
+  bandwidthSampleSize?: number;
 }
 
 /** 会话录制配置 */
@@ -198,4 +212,81 @@ export interface ResourceError {
   url: string;
   timestamp: number;
   pageUrl: string;
+}
+
+/** 网络类型 */
+export type NetworkType = 'wifi' | '4g' | '3g' | '2g' | 'slow-2g' | 'ethernet' | 'unknown' | 'offline';
+
+/** 网络信息 */
+export interface NetworkInfo {
+  /** 网络类型 */
+  type: NetworkType;
+  /** 是否在线 */
+  online: boolean;
+  /** 有效类型（effectiveType） */
+  effectiveType?: string;
+  /** 下行带宽估算 (Mbps) */
+  downlink?: number;
+  /** 往返时延估算 (ms) */
+  rtt?: number;
+  /** 是否开启数据节省模式 */
+  saveData?: boolean;
+}
+
+/** 请求统计 */
+export interface RequestStats {
+  /** 总请求数 */
+  total: number;
+  /** 成功数 */
+  success: number;
+  /** 失败数 */
+  failed: number;
+  /** 慢请求数（> 阈值） */
+  slow: number;
+  /** 平均耗时 (ms) */
+  avgDuration: number;
+  /** 最大耗时 (ms) */
+  maxDuration: number;
+  /** 失败率 */
+  failureRate: number;
+  /** 慢请求率 */
+  slowRate: number;
+}
+
+/** 带宽估算结果 */
+export interface BandwidthEstimate {
+  /** 估算带宽 (Kbps) */
+  bandwidth: number;
+  /** 样本数量 */
+  sampleCount: number;
+  /** 估算时间 */
+  timestamp: number;
+}
+
+/** 网络变化事件 */
+export interface NetworkChangeEvent {
+  /** 变化类型 */
+  changeType: 'online' | 'offline' | 'type-change' | 'quality-change';
+  /** 之前的网络信息 */
+  previous: NetworkInfo;
+  /** 当前的网络信息 */
+  current: NetworkInfo;
+  /** 时间戳 */
+  timestamp: number;
+}
+
+/** 网络质量数据（用于上报） */
+export interface NetworkQualityData {
+  /** 当前网络信息 */
+  networkInfo: NetworkInfo;
+  /** 请求统计 */
+  requestStats: RequestStats;
+  /** 带宽估算 */
+  bandwidthEstimate?: BandwidthEstimate;
+  /** 网络变化历史 */
+  recentChanges: NetworkChangeEvent[];
+  /** 页面 URL */
+  url: string;
+  /** 时间戳 */
+  timestamp: number;
 }

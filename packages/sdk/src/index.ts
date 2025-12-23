@@ -4,6 +4,7 @@ export { ErrorCatcher } from './core/error-catcher';
 export { ResourceMonitor } from './core/resource-monitor';
 export { BehaviorTracker } from './core/behavior-tracker';
 export { PerformanceMonitor } from './core/performance-monitor';
+export { NetworkMonitor } from './core/network-monitor';
 
 export type {
   MonitorConfig,
@@ -16,5 +17,12 @@ export type {
   LongTask,
   UserInfo,
   CustomContext,
-  DeviceInfo
+  DeviceInfo,
+  NetworkType,
+  NetworkInfo,
+  RequestStats,
+  BandwidthEstimate,
+  NetworkChangeEvent,
+  NetworkQualityData,
+  NetworkMonitorConfig
 } from './types';

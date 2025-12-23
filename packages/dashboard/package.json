@@ -19,6 +19,7 @@
     "echarts": "^6.0.0",
     "rrweb-player": "1.0.0-alpha.4",
     "vue-chartjs": "^5.3.3",
-    "vue-echarts": "^8.0.1"
+    "vue-echarts": "^8.0.1",
+    "vue-router": "^4.6.4"
   }
 }

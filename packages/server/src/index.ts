@@ -6,6 +6,7 @@ import errorsRouter from './routes/errors';
 import performanceRouter from './routes/performance';
 import sourcemapRouter from './routes/sourcemap';
 import authRouter from './routes/auth';
+import { authMiddleware } from './middleware/auth';
 
 const app: Express = express();
 
@@ -18,12 +19,14 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// 路由
+// 公开路由（无需认证）
 app.use('/api/auth', authRouter);
-app.use('/api', reportRouter);
-app.use('/api', errorsRouter);
-app.use('/api', performanceRouter);
-app.use('/api', sourcemapRouter);
+app.use('/api', reportRouter); // SDK 上报接口保持公开
+
+// 受保护路由（需要认证）
+app.use('/api', authMiddleware, errorsRouter);
+app.use('/api', authMiddleware, performanceRouter);
+app.use('/api', authMiddleware, sourcemapRouter);
 
 const PORT = process.env.PORT || 3000;
 

@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import type { User } from '../composables/useAuth';
+
 defineProps<{
   activeTab: string;
+  user?: User | null;
 }>();
 
 defineEmits<{
   'update:activeTab': [tab: string];
+  'logout': [];
 }>();
 </script>
 
@@ -48,6 +52,16 @@ defineEmits<{
     </nav>
 
     <div class="sidebar-footer">
+      <div v-if="user" class="user-info">
+        <div class="user-avatar">{{ user.name?.charAt(0).toUpperCase() || '?' }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ user.name }}</span>
+          <span class="user-role">{{ user.role }}</span>
+        </div>
+        <button class="logout-btn" @click="$emit('logout')" title="退出登录">
+          <span>🚪</span>
+        </button>
+      </div>
       <a href="http://localhost:5173" target="_blank" class="footer-link">
         <span class="footer-icon">🎯</span>
         <span class="footer-text">Demo App</span>
@@ -167,5 +181,63 @@ defineEmits<{
 
 .footer-icon {
   font-size: 16px;
+}
+
+/* 用户信息 */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--bg-lighter);
+  border-radius: 8px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: var(--border);
 }
 </style>

@@ -112,8 +112,8 @@ router.get('/errors/:id', async (req: Request, res: Response) => {
     if (errorRecord.stack) {
       try {
         responseData.parsedStack = await parseStack(
-          errorRecord.stack,
-          errorRecord.dsn,
+          errorRecord.stack as string,
+          errorRecord.dsn as string,
           version as string | undefined
         );
       } catch (parseError) {

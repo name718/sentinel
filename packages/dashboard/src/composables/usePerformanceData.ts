@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue';
+import { authFetch } from './useAuth';
 
 export function usePerformanceData(apiBase: string, dsn: string, timeRange: Ref<string>) {
   const performance = ref<any[]>([]);
@@ -20,7 +21,7 @@ export function usePerformanceData(apiBase: string, dsn: string, timeRange: Ref<
   async function fetchPerformance() {
     try {
       const startTime = getTimeRangeMs();
-      const res = await fetch(`${apiBase}/performance?dsn=${dsn}&pageSize=1000&startTime=${startTime}`);
+      const res = await authFetch(`${apiBase}/performance?dsn=${dsn}&pageSize=1000&startTime=${startTime}`);
       const data = await res.json();
       performance.value = data.list || [];
       perfStats.value.totalPerf = data.total || 0;

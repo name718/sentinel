@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue';
+import { authFetch } from './useAuth';
 
 export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string>) {
   const errors = ref<any[]>([]);
@@ -25,7 +26,7 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
     loading.value = true;
     try {
       const startTime = getTimeRangeMs();
-      const res = await fetch(`${apiBase}/errors?dsn=${dsn}&pageSize=1000&startTime=${startTime}`);
+      const res = await authFetch(`${apiBase}/errors?dsn=${dsn}&pageSize=1000&startTime=${startTime}`);
       const data = await res.json();
       errors.value = data.list || [];
       stats.value.totalErrors = data.total || 0;
@@ -39,7 +40,7 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
   // 获取错误分组
   async function fetchErrorGroups() {
     try {
-      const res = await fetch(`${apiBase}/errors/stats/groups?dsn=${dsn}`);
+      const res = await authFetch(`${apiBase}/errors/stats/groups?dsn=${dsn}`);
       const data = await res.json();
       errorGroups.value = data.groups || [];
     } catch (e) {
@@ -50,7 +51,7 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
   // 获取错误详情
   async function fetchErrorDetail(id: number) {
     try {
-      const res = await fetch(`${apiBase}/errors/${id}?version=1.0.0`);
+      const res = await authFetch(`${apiBase}/errors/${id}?version=1.0.0`);
       selectedError.value = await res.json();
     } catch (e) {
       console.error('获取错误详情失败:', e);

@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import router from './router';
 
 // 在 Vue 挂载前初始化主题，避免闪烁
 function initThemeEarly() {
@@ -19,4 +20,4 @@ function initThemeEarly() {
 
 initThemeEarly();
 
-createApp(App).mount('#app');
+createApp(App).use(router).mount('#app');

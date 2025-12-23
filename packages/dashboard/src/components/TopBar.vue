@@ -1,13 +1,17 @@
 <script setup lang="ts">
+import type { User } from '../composables/useAuth';
+
 defineProps<{
   timeRange: string;
   dsn: string;
   theme: 'light' | 'dark';
+  user?: User | null;
 }>();
 
 defineEmits<{
   'update:timeRange': [range: string];
   'toggleTheme': [];
+  'logout': [];
 }>();
 
 const timeOptions = [

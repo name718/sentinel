@@ -131,6 +131,15 @@ export class PerformanceMonitor {
     } else {
       window.addEventListener('load', () => this.scheduleCollect());
     }
+
+    // 备用：如果 load 事件迟迟不触发（慢网络），也要收集数据
+    // 最多等待 30 秒
+    setTimeout(() => {
+      if (!this.collected) {
+        console.log('[PerformanceMonitor] Fallback collect after 30s timeout');
+        this.collect();
+      }
+    }, 30000);
   }
 
   /** 停止监控 */
@@ -174,7 +183,11 @@ export class PerformanceMonitor {
       const nav = navEntries[0];
       data.ttfb = Math.round(nav.responseStart - nav.requestStart);
       data.domReady = Math.round(nav.domContentLoadedEventEnd - nav.fetchStart);
-      data.load = Math.round(nav.loadEventEnd - nav.fetchStart);
+      // loadEventEnd 可能还是 0，使用 performance.now() 作为备用
+      const loadTime = nav.loadEventEnd > 0 
+        ? nav.loadEventEnd - nav.fetchStart 
+        : performance.now();
+      data.load = Math.round(loadTime);
     }
 
     // LCP
@@ -205,6 +218,8 @@ export class PerformanceMonitor {
     data.webVitalsScore = this.calculateWebVitalsScore(data);
 
     this.collected = true;
+    
+    console.log('[PerformanceMonitor] Collected:', data);
     this.options.onPerformance(data);
     
     return data;

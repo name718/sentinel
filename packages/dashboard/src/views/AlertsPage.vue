@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { authFetch } from '../composables/useAuth';
+import { useProject } from '../composables/useProject';
 
 type AlertType = 'new_error' | 'error_threshold' | 'error_spike';
 
@@ -28,7 +29,7 @@ interface AlertHistory {
 }
 
 const API_BASE = '/api';
-const DSN = 'demo-app';
+const { currentDsn } = useProject();
 
 const rules = ref<AlertRule[]>([]);
 const history = ref<AlertHistory[]>([]);
@@ -40,7 +41,7 @@ const testEmailSending = ref(false);
 
 // 新规则表单
 const newRule = ref<AlertRule>({
-  dsn: DSN,
+  dsn: currentDsn.value,
   name: '',
   type: 'new_error',
   enabled: true,
@@ -75,7 +76,7 @@ async function fetchEmailStatus() {
 async function fetchRules() {
   loading.value = true;
   try {
-    const res = await authFetch(`${API_BASE}/alerts/rules?dsn=${DSN}`);
+    const res = await authFetch(`${API_BASE}/alerts/rules?dsn=${currentDsn.value}`);
     const data = await res.json();
     rules.value = data.rules || [];
   } catch (e) {
@@ -86,7 +87,7 @@ async function fetchRules() {
 
 async function fetchHistory() {
   try {
-    const res = await authFetch(`${API_BASE}/alerts/history?dsn=${DSN}&limit=20`);
+    const res = await authFetch(`${API_BASE}/alerts/history?dsn=${currentDsn.value}&limit=20`);
     const data = await res.json();
     history.value = data.history || [];
   } catch (e) {
@@ -99,6 +100,9 @@ async function createRule() {
     alert('请填写规则名称和收件人');
     return;
   }
+
+  // 确保使用当前项目的 DSN
+  newRule.value.dsn = currentDsn.value;
 
   try {
     const res = await authFetch(`${API_BASE}/alerts/rules`, {
@@ -180,7 +184,7 @@ function removeRecipient(email: string) {
 
 function resetNewRule() {
   newRule.value = {
-    dsn: DSN,
+    dsn: currentDsn.value,
     name: '',
     type: 'new_error',
     enabled: true,
@@ -211,6 +215,12 @@ function formatRecipients(recipients?: string[]): string {
   if (!recipients || recipients.length === 0) return '-';
   return recipients.map(maskEmail).join(', ');
 }
+
+// 监听项目切换，刷新数据
+watch(currentDsn, () => {
+  fetchRules();
+  fetchHistory();
+});
 
 onMounted(() => {
   fetchEmailStatus();

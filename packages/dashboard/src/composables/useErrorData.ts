@@ -1,9 +1,11 @@
-import { ref, type Ref } from 'vue';
+import { ref, type Ref, type ComputedRef, watch } from 'vue';
 import { authFetch } from './useAuth';
 
 export type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
 
-export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string>) {
+export function useErrorData(apiBase: string, dsn: Ref<string> | ComputedRef<string>, timeRange: Ref<string>) {
+  // 获取 DSN 值（支持 ref 和 computed）
+  const getDsn = () => typeof dsn === 'string' ? dsn : dsn.value;
   const errors = ref<any[]>([]);
   const errorGroups = ref<any[]>([]);
   const trendData = ref<{ time: string; count: number }[]>([]);
@@ -28,7 +30,7 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
     loading.value = true;
     try {
       const startTime = getTimeRangeMs();
-      const res = await authFetch(`${apiBase}/errors?dsn=${dsn}&pageSize=1000&startTime=${startTime}`);
+      const res = await authFetch(`${apiBase}/errors?dsn=${getDsn()}&pageSize=1000&startTime=${startTime}`);
       const data = await res.json();
       errors.value = data.list || [];
       stats.value.totalErrors = data.total || 0;
@@ -42,7 +44,7 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
   // 获取错误分组
   async function fetchErrorGroups() {
     try {
-      const res = await authFetch(`${apiBase}/errors/stats/groups?dsn=${dsn}`);
+      const res = await authFetch(`${apiBase}/errors/stats/groups?dsn=${getDsn()}`);
       const data = await res.json();
       errorGroups.value = data.groups || [];
     } catch (e) {
@@ -92,7 +94,7 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
       const res = await authFetch(`${apiBase}/errors/group/${fingerprint}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dsn, status, resolvedBy })
+        body: JSON.stringify({ dsn: getDsn(), status, resolvedBy })
       });
       if (res.ok) {
         const result = await res.json();

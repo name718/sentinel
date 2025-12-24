@@ -10,7 +10,7 @@ import SessionDemo from './components/SessionDemo.vue';
 import Console from './components/Console.vue';
 
 const CONFIG = {
-  dsn: 'demo-app',
+  dsn: '756b3c5f06ce7b89',
   reportUrl: 'http://localhost:3000/api/report',
   serverUrl: 'http://localhost:3000'
 };

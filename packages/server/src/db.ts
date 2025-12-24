@@ -149,12 +149,41 @@ async function createTables(client: PoolClient): Promise<void> {
     )
   `);
 
+  // 项目表
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id SERIAL PRIMARY KEY,
+      dsn VARCHAR(100) NOT NULL UNIQUE,
+      name VARCHAR(100) NOT NULL,
+      description TEXT,
+      platform VARCHAR(50) DEFAULT 'web',
+      owner_id INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 项目成员表
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS project_members (
+      id SERIAL PRIMARY KEY,
+      project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      role VARCHAR(20) DEFAULT 'member',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(project_id, user_id)
+    )
+  `);
+
   // 创建索引
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_dsn_timestamp ON errors(dsn, timestamp)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_fingerprint ON errors(fingerprint)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_status ON errors(status)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_performance_dsn_timestamp ON performance(dsn, timestamp)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_projects_dsn ON projects(dsn)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_project_members_user ON project_members(user_id)');
   
   console.log('[DB] Tables created/verified');
 }

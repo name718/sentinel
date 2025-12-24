@@ -58,6 +58,15 @@ defineEmits<{
         <span class="nav-icon">🔔</span>
         <span class="nav-text">告警配置</span>
       </button>
+
+      <button 
+        class="nav-item" 
+        :class="{ active: activeTab === 'projects' }"
+        @click="$emit('update:activeTab', 'projects')"
+      >
+        <span class="nav-icon">📦</span>
+        <span class="nav-text">项目管理</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">

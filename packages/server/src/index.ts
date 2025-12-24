@@ -7,6 +7,7 @@ import performanceRouter from './routes/performance';
 import sourcemapRouter from './routes/sourcemap';
 import authRouter from './routes/auth';
 import alertsRouter from './routes/alerts';
+import projectsRouter from './routes/projects';
 import { authMiddleware } from './middleware/auth';
 import { initEmailFromEnv } from './services/email';
 import { initAlertTables } from './services/alert';
@@ -31,6 +32,7 @@ app.use('/api', authMiddleware, errorsRouter);
 app.use('/api', authMiddleware, performanceRouter);
 app.use('/api', authMiddleware, sourcemapRouter);
 app.use('/api', authMiddleware, alertsRouter);
+app.use('/api', projectsRouter); // 项目路由（内部有 authMiddleware）
 
 const PORT = process.env.PORT || 3000;
 

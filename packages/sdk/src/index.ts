@@ -1,5 +1,6 @@
 export { Monitor, init, captureError, captureMessage } from './core/monitor';
 export { Reporter } from './core/reporter';
+export { WorkerReporter } from './core/report-worker';
 export { ErrorCatcher } from './core/error-catcher';
 export { ResourceMonitor } from './core/resource-monitor';
 export { BehaviorTracker } from './core/behavior-tracker';

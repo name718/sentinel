@@ -53,6 +53,7 @@ import type {
   NetworkChangeEvent
 } from '../types';
 import { Reporter } from './reporter';
+import { WorkerReporter } from './report-worker';
 import { ErrorCatcher } from './error-catcher';
 import { ResourceMonitor } from './resource-monitor';
 import { BehaviorTracker } from './behavior-tracker';
@@ -68,6 +69,7 @@ const DEFAULT_CONFIG: Partial<MonitorConfig> = {
   enablePerformance: true,
   enableBehavior: true,
   enableNetworkMonitor: true,
+  useWorker: true,
   batchSize: 10,
   reportInterval: 5000
 };
@@ -78,7 +80,7 @@ export class Monitor {
   private config: MonitorConfig | null = null;
   private breadcrumbs: Breadcrumb[] = [];
   private initialized = false;
-  private reporter: Reporter | null = null;
+  private reporter: Reporter | WorkerReporter | null = null;
   private errorCatcher: ErrorCatcher | null = null;
   private resourceMonitor: ResourceMonitor | null = null;
   private behaviorTracker: BehaviorTracker | null = null;
@@ -114,13 +116,24 @@ export class Monitor {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.initialized = true;
     
-    // 初始化上报器
-    this.reporter = new Reporter({
-      reportUrl: this.config.reportUrl,
-      dsn: this.config.dsn,
-      batchSize: this.config.batchSize!,
-      reportInterval: this.config.reportInterval!
-    });
+    // 初始化上报器（优先使用 Worker）
+    if (this.config.useWorker !== false && typeof Worker !== 'undefined') {
+      this.reporter = new WorkerReporter({
+        reportUrl: this.config.reportUrl,
+        dsn: this.config.dsn,
+        batchSize: this.config.batchSize!,
+        reportInterval: this.config.reportInterval!
+      });
+      console.log('[Monitor] Using WorkerReporter');
+    } else {
+      this.reporter = new Reporter({
+        reportUrl: this.config.reportUrl,
+        dsn: this.config.dsn,
+        batchSize: this.config.batchSize!,
+        reportInterval: this.config.reportInterval!
+      });
+      console.log('[Monitor] Using standard Reporter');
+    }
 
     // 初始化错误捕获
     if (this.config.enableError) {
@@ -523,7 +536,7 @@ export class Monitor {
   }
 
   /** 获取 Reporter（用于测试） */
-  getReporter(): Reporter | null {
+  getReporter(): Reporter | WorkerReporter | null {
     return this.reporter;
   }
 

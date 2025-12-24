@@ -30,6 +30,8 @@ export interface MonitorConfig {
   batchSize?: number;
   /** 上报间隔(ms)，默认 5000 */
   reportInterval?: number;
+  /** 使用 Web Worker 上报，默认 true（自动降级） */
+  useWorker?: boolean;
   /** 错误过滤白名单（只上报匹配的错误） */
   allowUrls?: (string | RegExp)[];
   /** 错误过滤黑名单（不上报匹配的错误） */

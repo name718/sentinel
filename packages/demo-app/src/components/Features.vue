@@ -37,6 +37,28 @@
       </div>
       
       <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>告警通知</h3>
+        <p>灵活的告警规则配置，支持邮件实时通知</p>
+        <ul class="feature-list">
+          <li>新错误即时告警</li>
+          <li>阈值/激增告警</li>
+          <li>冷却防重复</li>
+        </ul>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>状态管理</h3>
+        <p>错误生命周期管理，支持批量操作和状态流转</p>
+        <ul class="feature-list">
+          <li>待处理/处理中/已解决</li>
+          <li>批量状态变更</li>
+          <li>处理人追踪</li>
+        </ul>
+      </div>
+      
+      <div class="feature-card">
         <div class="feature-icon">👤</div>
         <h3>用户追踪</h3>
         <p>记录用户行为轨迹，了解错误发生前的操作</p>

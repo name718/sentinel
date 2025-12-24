@@ -5,6 +5,7 @@ import Header from './components/Header.vue';
 import Hero from './components/Hero.vue';
 import Features from './components/Features.vue';
 import ErrorDemo from './components/ErrorDemo.vue';
+import AlertDemo from './components/AlertDemo.vue';
 import SessionDemo from './components/SessionDemo.vue';
 import Console from './components/Console.vue';
 
@@ -79,6 +80,7 @@ defineExpose({ log });
       <Hero />
       <Features />
       <ErrorDemo @log="log" />
+      <AlertDemo @log="log" />
       <SessionDemo @log="log" />
     </main>
 

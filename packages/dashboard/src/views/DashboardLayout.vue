@@ -22,6 +22,7 @@ const activeTab = computed(() => {
   const path = route.path;
   if (path.includes('errors')) return 'errors';
   if (path.includes('performance')) return 'performance';
+  if (path.includes('alerts')) return 'alerts';
   return 'overview';
 });
 

@@ -49,6 +49,15 @@ defineEmits<{
         <span class="nav-icon">⚡</span>
         <span class="nav-text">性能分析</span>
       </button>
+
+      <button 
+        class="nav-item" 
+        :class="{ active: activeTab === 'alerts' }"
+        @click="$emit('update:activeTab', 'alerts')"
+      >
+        <span class="nav-icon">🔔</span>
+        <span class="nav-text">告警配置</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">

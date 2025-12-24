@@ -4,6 +4,7 @@
 import { Router, Request, Response } from 'express';
 import { getDB } from '../db';
 import { generateFingerprint } from '../services/error-aggregation';
+import { checkAndTriggerAlerts } from '../services/alert';
 import { Pool } from 'pg';
 
 const router: Router = Router();
@@ -113,20 +114,24 @@ async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise
     [dsn, fingerprint]
   );
   
-  if (existing.rows.length > 0) {
+  const isNew = existing.rows.length === 0;
+  let count = 1;
+  
+  if (!isNew) {
     // 更新计数和最后出现时间
-    const { id, count } = existing.rows[0];
+    const { id, count: existingCount } = existing.rows[0];
+    count = existingCount + 1;
     await db.query(
       'UPDATE errors SET count = $1, timestamp = $2, breadcrumbs = $3, session_replay = $4 WHERE id = $5',
       [
-        count + 1, 
+        count, 
         event.timestamp, 
         event.breadcrumbs ? JSON.stringify(event.breadcrumbs) : null,
         event.sessionReplay ? JSON.stringify(event.sessionReplay) : null,
         id
       ]
     );
-    console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count + 1}`);
+    console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count}`);
   } else {
     // 插入新记录
     await db.query(`
@@ -149,6 +154,17 @@ async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise
     ]);
     console.log(`[Report] 新错误: fingerprint=${fingerprint}, type=${event.type}`);
   }
+
+  // 检查并触发告警
+  checkAndTriggerAlerts({
+    dsn,
+    type: event.type,
+    message: event.message,
+    fingerprint,
+    url: event.url,
+    isNew,
+    count
+  }).catch(err => console.error('[Report] Alert check failed:', err));
 }
 
 /** 保存性能数据 */

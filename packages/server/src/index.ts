@@ -6,7 +6,10 @@ import errorsRouter from './routes/errors';
 import performanceRouter from './routes/performance';
 import sourcemapRouter from './routes/sourcemap';
 import authRouter from './routes/auth';
+import alertsRouter from './routes/alerts';
 import { authMiddleware } from './middleware/auth';
+import { initEmailFromEnv } from './services/email';
+import { initAlertTables } from './services/alert';
 
 const app: Express = express();
 
@@ -27,11 +30,18 @@ app.use('/api', reportRouter); // SDK 上报接口保持公开
 app.use('/api', authMiddleware, errorsRouter);
 app.use('/api', authMiddleware, performanceRouter);
 app.use('/api', authMiddleware, sourcemapRouter);
+app.use('/api', authMiddleware, alertsRouter);
 
 const PORT = process.env.PORT || 3000;
 
 // 初始化数据库后启动服务
-initDB().then(() => {
+initDB().then(async () => {
+  // 初始化告警表
+  await initAlertTables();
+  
+  // 初始化邮件服务
+  initEmailFromEnv();
+  
   app.listen(PORT, () => {
     console.log(`[Server] Running on http://localhost:${PORT}`);
   });

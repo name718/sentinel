@@ -27,23 +27,38 @@ export async function initDB(): Promise<Pool> {
     ssl: { rejectUnauthorized: false },
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 30000,
   });
 
-  // 测试连接
-  try {
-    const client = await pool.connect();
-    console.log('[DB] Connected to PostgreSQL (Neon)');
-    
-    // 创建表
-    await createTables(client);
-    client.release();
-    
-    return pool;
-  } catch (error) {
-    console.error('[DB] Connection failed:', error);
-    throw error;
+  // 处理连接错误，自动重连
+  pool.on('error', (err) => {
+    console.error('[DB] Pool error:', err.message);
+  });
+
+  // 测试连接（带重试）
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      const client = await pool.connect();
+      console.log('[DB] Connected to PostgreSQL (Neon)');
+      
+      // 创建表
+      await createTables(client);
+      client.release();
+      
+      return pool;
+    } catch (error) {
+      retries--;
+      if (retries === 0) {
+        console.error('[DB] Connection failed after 3 attempts:', error);
+        throw error;
+      }
+      console.log(`[DB] Connection failed, retrying... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
+  
+  throw new Error('Database connection failed');
 }
 
 /** 创建表 */
@@ -149,10 +164,25 @@ export function getDB(): Pool | null {
   return pool;
 }
 
-/** 执行查询 */
+/** 执行查询（带重试） */
 export async function query(sql: string, params?: (string | number | null)[]): Promise<QueryResult> {
   if (!pool) throw new Error('Database not initialized');
-  return pool.query(sql, params);
+  
+  let retries = 2;
+  while (retries >= 0) {
+    try {
+      return await pool.query(sql, params);
+    } catch (error: any) {
+      if (retries > 0 && error.message?.includes('Connection terminated')) {
+        retries--;
+        console.log('[DB] Connection lost, retrying query...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error('Query failed after retries');
 }
 
 /** 关闭数据库连接 */

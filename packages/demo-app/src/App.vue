@@ -15,7 +15,6 @@ const CONFIG = {
   serverUrl: 'http://localhost:3000'
 };
 
-const sdkInitialized = ref(false);
 const logs = ref<{ time: string; msg: string; type: string }[]>([]);
 
 function log(msg: string, type = 'info') {
@@ -24,11 +23,6 @@ function log(msg: string, type = 'info') {
 }
 
 function initSDK() {
-  if (sdkInitialized.value) {
-    log('SDK 已经初始化', 'warn');
-    return;
-  }
-
   try {
     const monitor = Monitor.getInstance();
     monitor.init({
@@ -58,7 +52,6 @@ function initSDK() {
       environment: 'demo',
     });
 
-    sdkInitialized.value = true;
     log('✅ SDK 初始化成功', 'success');
   } catch (e) {
     log('❌ 初始化失败: ' + (e as Error).message, 'error');
@@ -66,7 +59,7 @@ function initSDK() {
 }
 
 onMounted(() => {
-  log('📦 应用已加载，点击右上角初始化 SDK', 'info');
+  initSDK();
 });
 
 defineExpose({ log });
@@ -74,7 +67,7 @@ defineExpose({ log });
 
 <template>
   <div class="app">
-    <Header :initialized="sdkInitialized" @init="initSDK" />
+    <Header />
     
     <main class="main">
       <Hero />

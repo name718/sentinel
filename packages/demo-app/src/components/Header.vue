@@ -1,11 +1,4 @@
 <script setup lang="ts">
-defineProps<{
-  initialized: boolean;
-}>();
-
-defineEmits<{
-  init: [];
-}>();
 </script>
 
 <template>
@@ -21,14 +14,10 @@ defineEmits<{
         <a href="http://localhost:5174" target="_blank" class="nav-link">
           📊 Dashboard
         </a>
-        <button 
-          class="btn-init" 
-          :class="{ active: initialized }"
-          @click="$emit('init')"
-        >
-          <span class="status-dot" :class="{ active: initialized }"></span>
-          {{ initialized ? 'SDK 已启动' : '启动 SDK' }}
-        </button>
+        <div class="sdk-status">
+          <span class="status-dot active"></span>
+          SDK 运行中
+        </div>
       </nav>
     </div>
   </header>
@@ -97,39 +86,23 @@ defineEmits<{
   color: var(--text);
 }
 
-.btn-init {
+.sdk-status {
   padding: 10px 20px;
-  background: var(--bg-lighter);
-  border: 2px solid var(--border);
+  background: var(--success);
+  border: 2px solid var(--success);
   border-radius: 8px;
-  color: var(--text);
+  color: white;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.btn-init:hover {
-  border-color: var(--primary);
-  background: var(--primary);
-}
-
-.btn-init.active {
-  background: var(--success);
-  border-color: var(--success);
 }
 
 .status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--text-secondary);
-}
-
-.status-dot.active {
   background: white;
   animation: pulse 2s infinite;
 }

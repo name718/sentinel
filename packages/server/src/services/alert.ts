@@ -258,7 +258,7 @@ async function evaluateRule(rule: AlertRule, errorData: {
       // 错误次数超过阈值
       return rule.threshold !== undefined && errorData.count >= rule.threshold;
 
-    case 'error_spike':
+    case 'error_spike': {
       // 错误激增（时间窗口内错误数超过阈值）
       if (!rule.threshold || !rule.timeWindow) return false;
       const windowStart = Date.now() - rule.timeWindow * 60 * 1000;
@@ -268,6 +268,7 @@ async function evaluateRule(rule: AlertRule, errorData: {
       );
       const recentCount = parseInt(countResult.rows[0].count, 10);
       return recentCount >= rule.threshold;
+    }
 
     default:
       return false;
@@ -303,7 +304,7 @@ async function triggerAlert(rule: AlertRule, errorData: {
   await query(
     `INSERT INTO alert_history (rule_id, dsn, fingerprint, error_message, email_sent)
      VALUES ($1, $2, $3, $4, $5)`,
-    [rule.id, errorData.dsn, errorData.fingerprint, errorData.message, emailSent]
+    [rule.id ?? null, errorData.dsn, errorData.fingerprint, errorData.message, emailSent]
   );
 
   // 更新冷却时间

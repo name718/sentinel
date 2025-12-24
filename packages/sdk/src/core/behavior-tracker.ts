@@ -232,6 +232,7 @@ export class BehaviorTracker {
     this.originalXHROpen = XMLHttpRequest.prototype.open;
     this.originalXHRSend = XMLHttpRequest.prototype.send;
     
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     
     XMLHttpRequest.prototype.open = function(method: string, url: string | URL, ...args: unknown[]) {
@@ -268,6 +269,7 @@ export class BehaviorTracker {
   /** 追踪 Fetch 请求 */
   private trackFetch(): void {
     this.originalFetch = window.fetch;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     
     window.fetch = async function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {

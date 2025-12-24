@@ -165,15 +165,16 @@ export function getDB(): Pool | null {
 }
 
 /** 执行查询（带重试） */
-export async function query(sql: string, params?: (string | number | null)[]): Promise<QueryResult> {
+export async function query(sql: string, params?: (string | number | boolean | null | string[])[]): Promise<QueryResult> {
   if (!pool) throw new Error('Database not initialized');
   
   let retries = 2;
   while (retries >= 0) {
     try {
       return await pool.query(sql, params);
-    } catch (error: any) {
-      if (retries > 0 && error.message?.includes('Connection terminated')) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (retries > 0 && errorMessage.includes('Connection terminated')) {
         retries--;
         console.log('[DB] Connection lost, retrying query...');
         await new Promise(resolve => setTimeout(resolve, 500));

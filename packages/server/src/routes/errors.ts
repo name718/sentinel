@@ -8,6 +8,9 @@ import { normalizeMessage, extractStackSignature } from '../services/error-aggre
 
 const router: Router = Router();
 
+/** 错误状态类型 */
+type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
+
 /** 解析错误记录 */
 function parseErrorRow(row: Record<string, unknown>) {
   return {
@@ -27,6 +30,9 @@ function parseErrorRow(row: Record<string, unknown>) {
     firstSeen: row.first_seen ? Number(row.first_seen) : null,
     fingerprint: row.fingerprint,
     count: row.count,
+    status: (row.status as ErrorStatus) || 'open',
+    resolvedAt: row.resolved_at,
+    resolvedBy: row.resolved_by,
     createdAt: row.created_at
   };
 }
@@ -180,7 +186,7 @@ router.get('/errors/stats/trend', async (req: Request, res: Response) => {
 
 /** 错误分组统计 */
 router.get('/errors/stats/groups', async (req: Request, res: Response) => {
-  const { dsn, startTime, endTime, limit = '20' } = req.query;
+  const { dsn, startTime, endTime, limit = '20', status } = req.query;
   
   if (!dsn) {
     return res.status(400).json({ error: 'dsn is required' });
@@ -198,7 +204,8 @@ router.get('/errors/stats/groups', async (req: Request, res: Response) => {
         SUM(count) as total_count,
         MIN(timestamp) as first_seen,
         MAX(timestamp) as last_seen,
-        COUNT(DISTINCT url) as affected_urls
+        COUNT(DISTINCT url) as affected_urls,
+        (SELECT e2.status FROM errors e2 WHERE e2.fingerprint = errors.fingerprint ORDER BY e2.timestamp DESC LIMIT 1) as status
       FROM errors 
       WHERE dsn = $1
     `;
@@ -215,6 +222,11 @@ router.get('/errors/stats/groups', async (req: Request, res: Response) => {
       params.push(Number(endTime));
       paramIndex++;
     }
+    if (status) {
+      sql += ` AND status = $${paramIndex}`;
+      params.push(status as string);
+      paramIndex++;
+    }
 
     sql += ` GROUP BY fingerprint, type, message ORDER BY total_count DESC LIMIT $${paramIndex}`;
     params.push(Number(limit));
@@ -228,7 +240,8 @@ router.get('/errors/stats/groups', async (req: Request, res: Response) => {
       totalCount: parseInt(row.total_count, 10),
       firstSeen: Number(row.first_seen),
       lastSeen: Number(row.last_seen),
-      affectedUrls: parseInt(row.affected_urls, 10)
+      affectedUrls: parseInt(row.affected_urls, 10),
+      status: row.status || 'open'
     }));
 
     res.json({ groups });
@@ -289,6 +302,74 @@ router.get('/errors/group/:fingerprint/sessions', async (req: Request, res: Resp
   } catch (error) {
     console.error('[Errors] Sessions query failed:', error);
     res.status(500).json({ error: 'Query failed' });
+  }
+});
+
+/** 更新错误状态 */
+router.patch('/errors/:id/status', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, resolvedBy } = req.body;
+  
+  const validStatuses: ErrorStatus[] = ['open', 'processing', 'resolved', 'ignored'];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Must be one of: open, processing, resolved, ignored' });
+  }
+
+  const db = getDB();
+  if (!db) {
+    return res.status(500).json({ error: 'Database not initialized' });
+  }
+
+  try {
+    const resolvedAt = (status === 'resolved' || status === 'ignored') ? new Date() : null;
+    
+    const result = await db.query(
+      `UPDATE errors SET status = $1, resolved_at = $2, resolved_by = $3 WHERE id = $4 RETURNING *`,
+      [status, resolvedAt, resolvedBy || null, Number(id)]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Error not found' });
+    }
+
+    res.json(parseErrorRow(result.rows[0]));
+  } catch (error) {
+    console.error('[Errors] Status update failed:', error);
+    res.status(500).json({ error: 'Update failed' });
+  }
+});
+
+/** 批量更新错误状态（按指纹） */
+router.patch('/errors/group/:fingerprint/status', async (req: Request, res: Response) => {
+  const { fingerprint } = req.params;
+  const { dsn, status, resolvedBy } = req.body;
+  
+  if (!dsn) {
+    return res.status(400).json({ error: 'dsn is required' });
+  }
+
+  const validStatuses: ErrorStatus[] = ['open', 'processing', 'resolved', 'ignored'];
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Must be one of: open, processing, resolved, ignored' });
+  }
+
+  const db = getDB();
+  if (!db) {
+    return res.status(500).json({ error: 'Database not initialized' });
+  }
+
+  try {
+    const resolvedAt = (status === 'resolved' || status === 'ignored') ? new Date() : null;
+    
+    const result = await db.query(
+      `UPDATE errors SET status = $1, resolved_at = $2, resolved_by = $3 WHERE dsn = $4 AND fingerprint = $5`,
+      [status, resolvedAt, resolvedBy || null, dsn, fingerprint]
+    );
+    
+    res.json({ updated: result.rowCount, fingerprint, status });
+  } catch (error) {
+    console.error('[Errors] Batch status update failed:', error);
+    res.status(500).json({ error: 'Update failed' });
   }
 });
 

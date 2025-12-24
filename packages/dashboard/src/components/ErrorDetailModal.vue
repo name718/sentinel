@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import SessionReplayPlayer from './SessionReplayPlayer.vue';
+import ErrorStatusBadge from './ErrorStatusBadge.vue';
+
+type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
 
 interface ErrorDetail {
   id: number;
@@ -12,6 +15,9 @@ interface ErrorDetail {
   filename?: string;
   lineno?: number;
   colno?: number;
+  status?: ErrorStatus;
+  resolvedAt?: string;
+  resolvedBy?: string;
   parsedStack?: Array<{
     file: string;
     line: number;
@@ -40,6 +46,7 @@ defineProps<{
 
 defineEmits<{
   close: [];
+  updateStatus: [id: number, status: ErrorStatus];
 }>();
 
 const activeTab = ref<'details' | 'replay'>('details');
@@ -88,17 +95,32 @@ function openInVSCode(file: string, line: number, column: number) {
       <div class="modal-body">
         <!-- 错误详情标签页 -->
         <div v-show="activeTab === 'details'" class="tab-content">
-          <div class="detail-section">
-            <label>类型</label>
-            <span class="badge badge-error">{{ error.type }}</span>
+          <div class="detail-row">
+            <div class="detail-section">
+              <label>类型</label>
+              <span class="badge badge-error">{{ error.type }}</span>
+            </div>
+            <div class="detail-section">
+              <label>状态</label>
+              <ErrorStatusBadge 
+                :status="error.status || 'open'" 
+                @change="$emit('updateStatus', error.id, $event)"
+              />
+            </div>
+            <div class="detail-section">
+              <label>发生次数</label>
+              <span class="badge badge-count">{{ error.count }} 次</span>
+            </div>
+          </div>
+          <div class="detail-section" v-if="error.resolvedAt">
+            <label>解决信息</label>
+            <p class="resolved-info">
+              {{ error.resolvedBy ? `由 ${error.resolvedBy} ` : '' }}于 {{ new Date(error.resolvedAt).toLocaleString('zh-CN') }} 标记
+            </p>
           </div>
           <div class="detail-section">
             <label>错误信息</label>
             <p>{{ error.message }}</p>
-          </div>
-          <div class="detail-section">
-            <label>发生次数</label>
-            <span class="badge badge-count">{{ error.count }} 次</span>
           </div>
           <div class="detail-section">
             <label>页面 URL</label>
@@ -275,6 +297,14 @@ function openInVSCode(file: string, line: number, column: number) {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+.detail-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.detail-row .detail-section {
+  flex: 0 0 auto;
+}
 .detail-section { margin-bottom: 20px; }
 .detail-section label { 
   display: block; 
@@ -380,6 +410,11 @@ function openInVSCode(file: string, line: number, column: number) {
   font-size: 12px;
   color: var(--text-secondary);
   margin: 8px 0 0 0;
+}
+.resolved-info {
+  font-size: 13px;
+  color: var(--success);
+  margin: 0;
 }
 .breadcrumbs { max-height: 200px; overflow-y: auto; }
 .crumb {

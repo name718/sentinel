@@ -45,6 +45,8 @@ const {
   fetchErrors,
   fetchErrorGroups,
   fetchErrorDetail,
+  updateErrorStatus,
+  updateGroupStatus,
   closeDetail,
 } = useErrorData(API_BASE, DSN, timeRange);
 
@@ -93,6 +95,8 @@ provide('dashboardData', {
   fetchErrorGroups,
   fetchErrors,
   fetchPerformance,
+  updateErrorStatus,
+  updateGroupStatus,
   resetFilters,
   changePage,
 });
@@ -193,11 +197,17 @@ onMounted(() => {
           @refresh="fetchErrors"
           @viewDetail="fetchErrorDetail"
           @changePage="changePage"
+          @updateStatus="updateErrorStatus"
+          @updateGroupStatus="updateGroupStatus"
         />
       </div>
     </div>
 
-    <ErrorDetailModal :error="selectedError" @close="closeDetail" />
+    <ErrorDetailModal 
+      :error="selectedError" 
+      @close="closeDetail" 
+      @updateStatus="updateErrorStatus"
+    />
     
     <SessionCompare 
       v-if="showSessionCompare"

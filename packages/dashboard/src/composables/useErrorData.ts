@@ -1,6 +1,8 @@
 import { ref, type Ref } from 'vue';
 import { authFetch } from './useAuth';
 
+export type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
+
 export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string>) {
   const errors = ref<any[]>([]);
   const errorGroups = ref<any[]>([]);
@@ -58,6 +60,59 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
     }
   }
 
+  // 更新错误状态
+  async function updateErrorStatus(id: number, status: ErrorStatus, resolvedBy?: string) {
+    try {
+      const res = await authFetch(`${apiBase}/errors/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, resolvedBy })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        // 更新本地数据
+        const idx = errors.value.findIndex(e => e.id === id);
+        if (idx !== -1) {
+          errors.value[idx] = { ...errors.value[idx], ...updated };
+        }
+        if (selectedError.value?.id === id) {
+          selectedError.value = { ...selectedError.value, ...updated };
+        }
+        return updated;
+      }
+    } catch (e) {
+      console.error('更新错误状态失败:', e);
+    }
+    return null;
+  }
+
+  // 批量更新错误状态（按指纹）
+  async function updateGroupStatus(fingerprint: string, status: ErrorStatus, resolvedBy?: string) {
+    try {
+      const res = await authFetch(`${apiBase}/errors/group/${fingerprint}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dsn, status, resolvedBy })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        // 更新本地分组数据
+        const idx = errorGroups.value.findIndex(g => g.fingerprint === fingerprint);
+        if (idx !== -1) {
+          errorGroups.value[idx] = { ...errorGroups.value[idx], status };
+        }
+        // 更新错误列表中相同指纹的错误
+        errors.value = errors.value.map(e => 
+          e.fingerprint === fingerprint ? { ...e, status } : e
+        );
+        return result;
+      }
+    } catch (e) {
+      console.error('批量更新错误状态失败:', e);
+    }
+    return null;
+  }
+
   // 计算趋势数据
   function calculateTrend() {
     const buckets = new Map<string, number>();
@@ -96,6 +151,8 @@ export function useErrorData(apiBase: string, dsn: string, timeRange: Ref<string
     fetchErrors,
     fetchErrorGroups,
     fetchErrorDetail,
+    updateErrorStatus,
+    updateGroupStatus,
     closeDetail,
     calculateTrend
   };

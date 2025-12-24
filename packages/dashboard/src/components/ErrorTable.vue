@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import ErrorStatusBadge from './ErrorStatusBadge.vue';
+
 interface ErrorItem {
   id: number;
   type: string;
   message: string;
   count: number;
   timestamp: number;
+  status?: 'open' | 'processing' | 'resolved' | 'ignored';
 }
 
 defineProps<{
@@ -16,6 +19,7 @@ defineProps<{
 defineEmits<{
   viewDetail: [id: number];
   changePage: [page: number];
+  updateStatus: [id: number, status: 'open' | 'processing' | 'resolved' | 'ignored'];
 }>();
 
 function formatTime(timestamp: number) {
@@ -36,6 +40,7 @@ function formatTime(timestamp: number) {
               <th>ID</th>
               <th>类型</th>
               <th>错误信息</th>
+              <th>状态</th>
               <th>次数</th>
               <th>时间</th>
               <th>操作</th>
@@ -47,6 +52,12 @@ function formatTime(timestamp: number) {
               <td><span class="badge badge-error">{{ err.type }}</span></td>
               <td class="msg-cell">
                 {{ err.message.substring(0, 50) }}{{ err.message.length > 50 ? '...' : '' }}
+              </td>
+              <td>
+                <ErrorStatusBadge 
+                  :status="err.status || 'open'" 
+                  @change="$emit('updateStatus', err.id, $event)"
+                />
               </td>
               <td><span class="badge badge-count">{{ err.count }}</span></td>
               <td>{{ formatTime(err.timestamp) }}</td>

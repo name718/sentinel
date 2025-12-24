@@ -2,6 +2,8 @@
 import ErrorFilters from '../components/ErrorFilters.vue';
 import ErrorTable from '../components/ErrorTable.vue';
 
+type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
+
 defineProps<{
   searchKeyword: string;
   errorTypeFilter: string;
@@ -20,6 +22,7 @@ defineEmits<{
   refresh: [];
   viewDetail: [id: number];
   changePage: [page: number];
+  updateStatus: [id: number, status: ErrorStatus];
 }>();
 </script>
 
@@ -48,6 +51,7 @@ defineEmits<{
       :totalPages="totalPages"
       @viewDetail="$emit('viewDetail', $event)"
       @changePage="$emit('changePage', $event)"
+      @updateStatus="$emit('updateStatus', $event[0], $event[1])"
     />
   </div>
 </template>

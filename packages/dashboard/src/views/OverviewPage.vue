@@ -3,6 +3,9 @@ import { computed } from 'vue';
 import ErrorTrendEChart from '../components/charts/ErrorTrendEChart.vue';
 import ErrorTypePie from '../components/charts/ErrorTypePie.vue';
 import PerformanceBar from '../components/charts/PerformanceBar.vue';
+import ErrorStatusBadge from '../components/ErrorStatusBadge.vue';
+
+type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
 
 interface Stats {
   totalErrors: number;
@@ -17,6 +20,7 @@ interface ErrorGroup {
   count: number;
   firstSeen: number;
   lastSeen: number;
+  status?: ErrorStatus;
 }
 
 const props = defineProps<{
@@ -31,6 +35,7 @@ const emit = defineEmits<{
   viewError: [id: number];
   refreshGroups: [];
   compareSessions: [fingerprint: string];
+  updateGroupStatus: [fingerprint: string, status: ErrorStatus];
 }>();
 
 // 计算错误类型分布
@@ -140,6 +145,10 @@ function getTimeAgo(timestamp: number) {
               v-for="group in errorGroups.slice(0, 5)" 
               :key="group.fingerprint"
               class="error-group-item"
+              :class="{ 
+                'group-resolved': group.status === 'resolved', 
+                'group-ignored': group.status === 'ignored' 
+              }"
             >
               <div class="group-main">
                 <div class="group-message">{{ group.message }}</div>
@@ -149,6 +158,10 @@ function getTimeAgo(timestamp: number) {
                 </div>
               </div>
               <div class="group-actions">
+                <ErrorStatusBadge 
+                  :status="group.status || 'open'" 
+                  @change="$emit('updateGroupStatus', group.fingerprint, $event)"
+                />
                 <button 
                   class="btn-compare" 
                   @click="$emit('compareSessions', group.fingerprint)"
@@ -156,7 +169,6 @@ function getTimeAgo(timestamp: number) {
                 >
                   🔍 对比
                 </button>
-                <div class="group-badge">{{ group.count }}</div>
               </div>
             </div>
           </div>
@@ -375,6 +387,16 @@ function getTimeAgo(timestamp: number) {
 
 .error-group-item:hover {
   border-color: var(--primary);
+}
+
+.error-group-item.group-resolved {
+  opacity: 0.7;
+  border-left: 3px solid #10b981;
+}
+
+.error-group-item.group-ignored {
+  opacity: 0.5;
+  border-left: 3px solid #6b7280;
 }
 
 .group-main {

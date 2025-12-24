@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import ErrorStatusBadge from './ErrorStatusBadge.vue';
+
+type ErrorStatus = 'open' | 'processing' | 'resolved' | 'ignored';
+
 interface ErrorGroup {
   fingerprint: string;
   type: string;
@@ -8,6 +12,7 @@ interface ErrorGroup {
   firstSeen: number;
   lastSeen: number;
   affectedUrls: number;
+  status?: ErrorStatus;
 }
 
 defineProps<{
@@ -17,6 +22,7 @@ defineProps<{
 
 defineEmits<{
   refresh: [];
+  updateGroupStatus: [fingerprint: string, status: ErrorStatus];
 }>();
 
 function formatTime(timestamp: number) {
@@ -33,10 +39,21 @@ function formatTime(timestamp: number) {
     <div class="card-body">
       <div v-if="groups.length === 0" class="empty">暂无数据</div>
       <div v-else class="error-groups">
-        <div class="group-item" v-for="group in groups.slice(0, 5)" :key="group.fingerprint">
+        <div 
+          class="group-item" 
+          v-for="group in groups.slice(0, 5)" 
+          :key="group.fingerprint"
+          :class="{ 'group-resolved': group.status === 'resolved', 'group-ignored': group.status === 'ignored' }"
+        >
           <div class="group-header">
             <span class="group-type">{{ group.type }}</span>
-            <span class="group-count">{{ group.totalCount }} 次</span>
+            <div class="group-header-right">
+              <ErrorStatusBadge 
+                :status="group.status || 'open'" 
+                @change="$emit('updateGroupStatus', group.fingerprint, $event)"
+              />
+              <span class="group-count">{{ group.totalCount }} 次</span>
+            </div>
           </div>
           <div class="group-message">{{ group.normalizedMessage || group.message }}</div>
           <div class="group-meta">
@@ -52,42 +69,90 @@ function formatTime(timestamp: number) {
 
 <style scoped>
 .card {
-  background: #ffffff;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   margin-bottom: 24px;
 }
 .card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.card-header h2 { font-size: 16px; margin: 0; }
+.card-header h2 { 
+  font-size: 16px; 
+  margin: 0;
+  color: var(--text);
+}
 .card-body { padding: 20px; }
-.empty { text-align: center; color: #64748b; padding: 40px; }
+.empty { 
+  text-align: center; 
+  color: var(--text-secondary); 
+  padding: 40px; 
+}
 .btn {
   padding: 4px 10px;
   font-size: 12px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
   transition: all 0.2s;
 }
-.btn:hover { background: #f1f5f9; }
-.error-groups { display: flex; flex-direction: column; gap: 12px; }
+.btn:hover { 
+  background: var(--bg-lighter);
+}
+.error-groups { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+}
 .group-item {
   padding: 16px;
-  background: #f8fafc;
+  background: var(--bg);
   border-radius: 8px;
   border-left: 4px solid #ef4444;
+  transition: opacity 0.2s;
 }
-.group-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-.group-type { font-weight: 600; color: #ef4444; }
-.group-count { font-size: 14px; color: #64748b; }
-.group-message { font-size: 14px; color: #1e293b; margin-bottom: 8px; word-break: break-all; }
-.group-meta { font-size: 12px; color: #64748b; }
+.group-item.group-resolved {
+  border-left-color: #10b981;
+  opacity: 0.7;
+}
+.group-item.group-ignored {
+  border-left-color: #6b7280;
+  opacity: 0.5;
+}
+.group-header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  margin-bottom: 8px; 
+}
+.group-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.group-type { 
+  font-weight: 600; 
+  color: #ef4444; 
+}
+.group-count { 
+  font-size: 14px; 
+  color: var(--text-secondary); 
+}
+.group-message { 
+  font-size: 14px; 
+  color: var(--text); 
+  margin-bottom: 8px; 
+  word-break: break-all; 
+}
+.group-meta { 
+  font-size: 12px; 
+  color: var(--text-secondary); 
+}
 </style>

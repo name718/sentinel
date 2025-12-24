@@ -67,8 +67,23 @@ async function createTables(client: PoolClient): Promise<void> {
       first_seen BIGINT,
       fingerprint TEXT,
       count INTEGER DEFAULT 1,
+      status VARCHAR(20) DEFAULT 'open',
+      resolved_at TIMESTAMP,
+      resolved_by TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+
+  // 添加 status 字段（如果不存在）
+  await client.query(`
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'errors' AND column_name = 'status') THEN
+        ALTER TABLE errors ADD COLUMN status VARCHAR(20) DEFAULT 'open';
+        ALTER TABLE errors ADD COLUMN resolved_at TIMESTAMP;
+        ALTER TABLE errors ADD COLUMN resolved_by TEXT;
+      END IF;
+    END $$;
   `);
 
   // 性能表
@@ -122,6 +137,7 @@ async function createTables(client: PoolClient): Promise<void> {
   // 创建索引
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_dsn_timestamp ON errors(dsn, timestamp)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_fingerprint ON errors(fingerprint)');
+  await client.query('CREATE INDEX IF NOT EXISTS idx_errors_status ON errors(status)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_performance_dsn_timestamp ON performance(dsn, timestamp)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)');
   

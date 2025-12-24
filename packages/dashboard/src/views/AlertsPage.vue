@@ -22,6 +22,7 @@ interface AlertHistory {
   dsn: string;
   fingerprint?: string;
   errorMessage: string;
+  recipients?: string[];
   triggeredAt: string;
   emailSent: boolean;
 }
@@ -195,6 +196,22 @@ function formatTime(timestamp: string) {
   return new Date(timestamp).toLocaleString('zh-CN');
 }
 
+// 邮箱脱敏：t***@example.com
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const masked = local.length > 1 
+    ? local[0] + '***' 
+    : local + '***';
+  return `${masked}@${domain}`;
+}
+
+// 格式化收件人列表（脱敏）
+function formatRecipients(recipients?: string[]): string {
+  if (!recipients || recipients.length === 0) return '-';
+  return recipients.map(maskEmail).join(', ');
+}
+
 onMounted(() => {
   fetchEmailStatus();
   fetchRules();
@@ -282,6 +299,9 @@ onMounted(() => {
             <div class="history-meta">
               <span>{{ formatTime(item.triggeredAt) }}</span>
               <span>{{ item.emailSent ? '邮件已发送' : '发送失败' }}</span>
+            </div>
+            <div class="history-recipients" v-if="item.recipients?.length">
+              📬 {{ formatRecipients(item.recipients) }}
             </div>
           </div>
         </div>
@@ -526,6 +546,12 @@ onMounted(() => {
   gap: 12px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.history-recipients {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 
 /* 表单样式 */

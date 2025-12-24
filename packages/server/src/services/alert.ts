@@ -27,6 +27,7 @@ export interface AlertHistory {
   dsn: string;
   fingerprint?: string;
   errorMessage: string;
+  recipients?: string[];
   triggeredAt: Date;
   emailSent: boolean;
 }
@@ -66,9 +67,20 @@ export async function initAlertTables(): Promise<void> {
       dsn TEXT NOT NULL,
       fingerprint TEXT,
       error_message TEXT,
+      recipients TEXT[],
       triggered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       email_sent BOOLEAN DEFAULT false
     )
+  `);
+
+  // 添加 recipients 字段（如果不存在）
+  await db.query(`
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'alert_history' AND column_name = 'recipients') THEN
+        ALTER TABLE alert_history ADD COLUMN recipients TEXT[];
+      END IF;
+    END $$;
   `);
 
   await db.query('CREATE INDEX IF NOT EXISTS idx_alert_rules_dsn ON alert_rules(dsn)');
@@ -189,6 +201,7 @@ export async function getAlertHistory(dsn: string, limit = 50): Promise<AlertHis
       dsn: row.dsn,
       fingerprint: row.fingerprint,
       errorMessage: row.error_message,
+      recipients: row.recipients || [],
       triggeredAt: row.triggered_at,
       emailSent: row.email_sent
     }));
@@ -302,9 +315,9 @@ async function triggerAlert(rule: AlertRule, errorData: {
 
   // 记录告警历史
   await query(
-    `INSERT INTO alert_history (rule_id, dsn, fingerprint, error_message, email_sent)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [rule.id ?? null, errorData.dsn, errorData.fingerprint, errorData.message, emailSent]
+    `INSERT INTO alert_history (rule_id, dsn, fingerprint, error_message, recipients, email_sent)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [rule.id ?? null, errorData.dsn, errorData.fingerprint, errorData.message, rule.recipients, emailSent]
   );
 
   // 更新冷却时间

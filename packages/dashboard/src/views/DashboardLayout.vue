@@ -143,6 +143,15 @@ function handleLogout() {
   router.push('/login');
 }
 
+// 根据当前路由刷新对应数据
+function handleRefresh() {
+  if (activeTab.value === 'performance') {
+    fetchPerformance();
+  } else {
+    fetchErrors();
+  }
+}
+
 watch(timeRange, () => {
   fetchErrors();
   fetchPerformance();
@@ -195,7 +204,7 @@ onMounted(() => {
           @refreshGroups="fetchErrorGroups"
           @compareSessions="handleCompareSessions"
           @reset="resetFilters"
-          @refresh="fetchErrors"
+          @refresh="handleRefresh"
           @viewDetail="fetchErrorDetail"
           @changePage="changePage"
           @updateStatus="updateErrorStatus"

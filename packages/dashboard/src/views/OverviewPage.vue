@@ -23,11 +23,24 @@ interface ErrorGroup {
   status?: ErrorStatus;
 }
 
+interface PerformanceRecord {
+  id: number;
+  fp?: number;
+  fcp?: number;
+  lcp?: number;
+  ttfb?: number;
+  domReady?: number;
+  load?: number;
+  cls?: number;
+  fid?: number;
+}
+
 const props = defineProps<{
   stats: Stats;
   trendData: any[];
   errorGroups: ErrorGroup[];
   recentErrors: any[];
+  performance?: PerformanceRecord[];
   theme?: 'light' | 'dark';
 }>();
 
@@ -48,18 +61,33 @@ const errorTypeData = computed(() => {
   return Array.from(typeMap.entries()).map(([type, count]) => ({ type, count }));
 });
 
-// 模拟性能数据（实际应从 props 传入）
-const performanceData = computed(() => [
-  { name: 'FCP', value: 1200, threshold: { good: 1800, warning: 3000 } },
-  { name: 'LCP', value: 2500, threshold: { good: 2500, warning: 4000 } },
-  { name: 'TTFB', value: 800, threshold: { good: 800, warning: 1800 } },
-  { name: 'DOM Ready', value: 1500, threshold: { good: 2000, warning: 3500 } },
-  { name: 'Load', value: 3200, threshold: { good: 3000, warning: 5000 } }
-]);
+// 计算性能数据平均值
+const performanceData = computed(() => {
+  const records = props.performance || [];
+  if (records.length === 0) {
+    return [
+      { name: 'FCP', value: 0, threshold: { good: 1800, warning: 3000 } },
+      { name: 'LCP', value: 0, threshold: { good: 2500, warning: 4000 } },
+      { name: 'TTFB', value: 0, threshold: { good: 800, warning: 1800 } },
+      { name: 'DOM Ready', value: 0, threshold: { good: 2000, warning: 3500 } },
+      { name: 'Load', value: 0, threshold: { good: 3000, warning: 5000 } }
+    ];
+  }
 
-function formatTime(timestamp: number) {
-  return new Date(timestamp).toLocaleString('zh-CN');
-}
+  // 计算各指标平均值
+  const avg = (key: keyof PerformanceRecord) => {
+    const values = records.map(r => r[key]).filter((v): v is number => typeof v === 'number' && v > 0);
+    return values.length > 0 ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+  };
+
+  return [
+    { name: 'FCP', value: avg('fcp'), threshold: { good: 1800, warning: 3000 } },
+    { name: 'LCP', value: avg('lcp'), threshold: { good: 2500, warning: 4000 } },
+    { name: 'TTFB', value: avg('ttfb'), threshold: { good: 800, warning: 1800 } },
+    { name: 'DOM Ready', value: avg('domReady'), threshold: { good: 2000, warning: 3500 } },
+    { name: 'Load', value: avg('load'), threshold: { good: 3000, warning: 5000 } }
+  ];
+});
 
 function getTimeAgo(timestamp: number) {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);

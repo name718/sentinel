@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import WebVitalsScore from '../components/WebVitalsScore.vue';
 import ResourceWaterfallChart from '../components/ResourceWaterfallChart.vue';
 import LongTaskAnalysis from '../components/LongTaskAnalysis.vue';
@@ -21,13 +21,16 @@ interface PerformanceData {
   webVitalsScore?: any;
 }
 
-defineProps<{
-  performance: PerformanceData[];
+const props = defineProps<{
+  performance?: PerformanceData[];
 }>();
 
 defineEmits<{
   refresh: [];
 }>();
+
+// 使用 props.performance 或空数组
+const performanceList = computed(() => props.performance || []);
 
 const selectedPerf = ref<PerformanceData | null>(null);
 
@@ -59,7 +62,7 @@ function closeDetail() {
 
     <div class="card">
       <div class="card-body">
-        <div v-if="performance.length === 0" class="empty">暂无性能数据</div>
+        <div v-if="performanceList.length === 0" class="empty">暂无性能数据</div>
         <table v-else class="table">
           <thead>
             <tr>
@@ -75,7 +78,7 @@ function closeDetail() {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="perf in performance" :key="perf.id">
+            <tr v-for="perf in performanceList" :key="perf.id">
               <td>#{{ perf.id }}</td>
               <td class="url-cell">{{ perf.url }}</td>
               <td>{{ formatDuration(perf.fcp) }}</td>

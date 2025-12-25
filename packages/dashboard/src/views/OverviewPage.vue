@@ -18,7 +18,8 @@ interface Stats {
 interface ErrorGroup {
   fingerprint: string;
   message: string;
-  count: number;
+  count?: number;
+  totalCount?: number;
   firstSeen: number;
   lastSeen: number;
   status?: ErrorStatus;
@@ -34,6 +35,7 @@ interface PerformanceRecord {
   load?: number;
   cls?: number;
   fid?: number;
+  timestamp?: number;
 }
 
 const props = defineProps<{
@@ -92,6 +94,67 @@ const performanceData = computed(() => {
   ];
 });
 
+// 计算错误率（错误数/性能记录数，近似 PV）
+const errorRate = computed(() => {
+  if (props.stats.totalPerf === 0) return 0;
+  return ((props.stats.totalErrors / props.stats.totalPerf) * 100).toFixed(2);
+});
+
+// 计算未解决错误数
+const unresolvedErrors = computed(() => {
+  return props.errorGroups.filter(g => g.status === 'open' || !g.status).length;
+});
+
+// 计算 Web Vitals 评分
+const webVitalsScore = computed(() => {
+  const records = props.performance || [];
+  if (records.length === 0) return { score: 0, level: 'unknown' };
+  
+  const avg = (key: keyof PerformanceRecord) => {
+    const values = records.map(r => r[key]).filter((v): v is number => typeof v === 'number' && v > 0);
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+  };
+  
+  const lcp = avg('lcp');
+  const fcp = avg('fcp');
+  const cls = avg('cls');
+  
+  // 简单评分：LCP < 2.5s, FCP < 1.8s, CLS < 0.1 为优秀
+  let score = 100;
+  if (lcp > 4000) score -= 30;
+  else if (lcp > 2500) score -= 15;
+  if (fcp > 3000) score -= 30;
+  else if (fcp > 1800) score -= 15;
+  if (cls > 0.25) score -= 30;
+  else if (cls > 0.1) score -= 15;
+  
+  const level = score >= 80 ? 'good' : score >= 50 ? 'needs-improvement' : 'poor';
+  return { score: Math.max(0, score), level };
+});
+
+// 计算今日错误数（最近24小时）
+const todayErrors = computed(() => {
+  const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  return props.recentErrors.filter(e => e.timestamp > oneDayAgo).length;
+});
+
+// 计算错误趋势（与前一时段对比）
+const errorTrend = computed(() => {
+  if (props.trendData.length < 2) return { direction: 'stable', percentage: 0 };
+  
+  const mid = Math.floor(props.trendData.length / 2);
+  const firstHalf = props.trendData.slice(0, mid).reduce((sum, d) => sum + d.count, 0);
+  const secondHalf = props.trendData.slice(mid).reduce((sum, d) => sum + d.count, 0);
+  
+  if (firstHalf === 0) return { direction: 'stable', percentage: 0 };
+  
+  const change = ((secondHalf - firstHalf) / firstHalf) * 100;
+  return {
+    direction: change > 5 ? 'up' : change < -5 ? 'down' : 'stable',
+    percentage: Math.abs(Math.round(change))
+  };
+});
+
 function getTimeAgo(timestamp: number) {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
   if (seconds < 60) return `${seconds}秒前`;
@@ -115,29 +178,69 @@ function goToErrorDetail(id: number) {
       <p class="page-desc">实时监控应用健康状况</p>
     </div>
 
-    <!-- 统计卡片 -->
+    <!-- 核心指标卡片 -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon error">🐛</div>
         <div class="stat-content">
           <div class="stat-label">错误总数</div>
           <div class="stat-value">{{ stats.totalErrors }}</div>
+          <div class="stat-sub" v-if="errorTrend.direction !== 'stable'">
+            <span :class="['trend', errorTrend.direction]">
+              {{ errorTrend.direction === 'up' ? '↑' : '↓' }} {{ errorTrend.percentage }}%
+            </span>
+            <span class="trend-label">较前期</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon warning">⚠️</div>
+        <div class="stat-content">
+          <div class="stat-label">未解决错误</div>
+          <div class="stat-value" :class="{ 'text-danger': unresolvedErrors > 0 }">{{ unresolvedErrors }}</div>
+          <div class="stat-sub">
+            <span class="sub-text">共 {{ stats.errorGroups }} 个分组</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon rate">📉</div>
+        <div class="stat-content">
+          <div class="stat-label">错误率</div>
+          <div class="stat-value" :class="{ 'text-danger': Number(errorRate) > 1, 'text-warning': Number(errorRate) > 0.5 }">
+            {{ errorRate }}%
+          </div>
+          <div class="stat-sub">
+            <span class="sub-text">错误数/访问量</span>
+          </div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon perf">⚡</div>
         <div class="stat-content">
-          <div class="stat-label">性能记录</div>
-          <div class="stat-value">{{ stats.totalPerf }}</div>
+          <div class="stat-label">性能评分</div>
+          <div class="stat-value" :class="['score-' + webVitalsScore.level]">
+            {{ webVitalsScore.score }}
+          </div>
+          <div class="stat-sub">
+            <span :class="['score-badge', webVitalsScore.level]">
+              {{ webVitalsScore.level === 'good' ? '优秀' : webVitalsScore.level === 'needs-improvement' ? '待优化' : '较差' }}
+            </span>
+          </div>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon group">📊</div>
+        <div class="stat-icon today">📅</div>
         <div class="stat-content">
-          <div class="stat-label">错误分组</div>
-          <div class="stat-value">{{ stats.errorGroups }}</div>
+          <div class="stat-label">今日错误</div>
+          <div class="stat-value">{{ todayErrors }}</div>
+          <div class="stat-sub">
+            <span class="sub-text">最近 24 小时</span>
+          </div>
         </div>
       </div>
 
@@ -146,6 +249,9 @@ function goToErrorDetail(id: number) {
         <div class="stat-content">
           <div class="stat-label">影响页面</div>
           <div class="stat-value">{{ stats.affectedPages }}</div>
+          <div class="stat-sub">
+            <span class="sub-text">{{ stats.totalPerf }} 次访问</span>
+          </div>
         </div>
       </div>
     </div>
@@ -188,7 +294,7 @@ function goToErrorDetail(id: number) {
               <div class="group-main">
                 <div class="group-message">{{ group.message }}</div>
                 <div class="group-meta">
-                  <span class="group-count">{{ group.count }} 次</span>
+                  <span class="group-count">{{ group.totalCount || group.count || 0 }} 次</span>
                   <span class="group-time">{{ getTimeAgo(group.lastSeen) }}</span>
                 </div>
               </div>
@@ -200,7 +306,7 @@ function goToErrorDetail(id: number) {
                 <button 
                   class="btn-compare" 
                   @click="$emit('compareSessions', group.fingerprint)"
-                  :title="`对比 ${group.count} 个 Session`"
+                  :title="`对比 ${group.totalCount || group.count || 0} 个 Session`"
                 >
                   🔍 对比
                 </button>
@@ -267,8 +373,8 @@ function goToErrorDetail(id: number) {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
   margin-bottom: 32px;
 }
 
@@ -278,7 +384,7 @@ function goToErrorDetail(id: number) {
   border-radius: 12px;
   padding: 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   transition: all 0.2s;
 }
@@ -296,26 +402,36 @@ function goToErrorDetail(id: number) {
   align-items: center;
   justify-content: center;
   font-size: 24px;
+  flex-shrink: 0;
 }
 
 .stat-icon.error {
   background: rgba(239, 68, 68, 0.1);
 }
 
-.stat-icon.perf {
+.stat-icon.warning {
   background: rgba(245, 158, 11, 0.1);
 }
 
-.stat-icon.group {
-  background: rgba(99, 102, 241, 0.1);
+.stat-icon.rate {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.stat-icon.perf {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.stat-icon.today {
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .stat-icon.page {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .stat-content {
   flex: 1;
+  min-width: 0;
 }
 
 .stat-label {
@@ -328,6 +444,79 @@ function goToErrorDetail(id: number) {
   font-size: 28px;
   font-weight: 700;
   color: var(--text);
+  line-height: 1.2;
+}
+
+.stat-value.text-danger {
+  color: #ef4444;
+}
+
+.stat-value.text-warning {
+  color: #f59e0b;
+}
+
+.stat-value.score-good {
+  color: #10b981;
+}
+
+.stat-value.score-needs-improvement {
+  color: #f59e0b;
+}
+
+.stat-value.score-poor {
+  color: #ef4444;
+}
+
+.stat-sub {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trend {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.trend.up {
+  color: #ef4444;
+}
+
+.trend.down {
+  color: #10b981;
+}
+
+.trend-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.sub-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.score-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.score-badge.good {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.score-badge.needs-improvement {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.score-badge.poor {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 /* 图表区域 */

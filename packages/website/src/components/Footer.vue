@@ -33,7 +33,7 @@
       </div>
       
       <div class="footer-bottom">
-        <p>© 2024 Monitor. 开源项目，MIT 许可证</p>
+        <p>© 2025 Monitor. 开源项目，MIT 许可证</p>
       </div>
     </div>
   </footer>

@@ -7,6 +7,7 @@ import { getDB } from '../db';
 import { hashPassword, verifyPassword } from '../services/password';
 import { signToken, JwtPayload } from '../services/jwt';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { sendVerificationCode, verifyCode } from '../services/verification';
 
 const router: Router = Router();
 
@@ -44,15 +45,52 @@ function formatUser(row: Record<string, unknown>): User {
 }
 
 /**
+ * 发送验证码
+ * POST /api/auth/send-code
+ */
+router.post('/send-code', async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: '请输入邮箱' });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: '邮箱格式不正确' });
+  }
+
+  const db = getDB();
+  if (db) {
+    // 检查邮箱是否已注册
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: '该邮箱已被注册' });
+    }
+  }
+
+  const result = await sendVerificationCode(email);
+  
+  if (result.success) {
+    res.json({ message: result.message });
+  } else {
+    res.status(400).json({ error: result.message });
+  }
+});
+
+/**
  * 注册接口
  * POST /api/auth/register
  */
 router.post('/register', async (req: Request, res: Response) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, code } = req.body;
 
   // 参数验证
   if (!email || !password || !name) {
     return res.status(400).json({ error: '邮箱、密码和姓名都是必填项' });
+  }
+
+  if (!code) {
+    return res.status(400).json({ error: '请输入验证码' });
   }
 
   if (!isValidEmail(email)) {
@@ -61,6 +99,11 @@ router.post('/register', async (req: Request, res: Response) => {
 
   if (!isValidPassword(password)) {
     return res.status(400).json({ error: '密码至少需要8位' });
+  }
+
+  // 验证验证码
+  if (!verifyCode(email, code)) {
+    return res.status(400).json({ error: '验证码错误或已过期' });
   }
 
   const db = getDB();

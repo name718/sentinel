@@ -88,7 +88,7 @@ export function useAuth() {
   }
 
   /** 注册 */
-  async function register(email: string, password: string, name: string): Promise<boolean> {
+  async function register(email: string, password: string, name: string, code?: string): Promise<boolean> {
     loading.value = true;
     error.value = null;
 
@@ -96,7 +96,7 @@ export function useAuth() {
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, name, code }),
       });
 
       const data = await response.json();

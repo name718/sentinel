@@ -80,10 +80,6 @@ defineEmits<{
           <span>🚪</span>
         </button>
       </div>
-      <a href="http://localhost:5173" target="_blank" class="footer-link">
-        <span class="footer-icon">🎯</span>
-        <span class="footer-text">Demo App</span>
-      </a>
     </div>
   </aside>
 </template>

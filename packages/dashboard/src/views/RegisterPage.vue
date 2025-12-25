@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
+import { API_BASE } from '../config';
 
 const router = useRouter();
 const { register, loading, error } = useAuth();
@@ -10,12 +11,62 @@ const name = ref('');
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const code = ref('');
 const localError = ref('');
+
+// 验证码相关
+const codeSending = ref(false);
+const codeSent = ref(false);
+const countdown = ref(0);
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+
+const canSendCode = computed(() => {
+  return email.value && !codeSending.value && countdown.value === 0;
+});
+
+async function sendCode() {
+  if (!canSendCode.value) return;
+  
+  localError.value = '';
+  codeSending.value = true;
+  
+  try {
+    const res = await fetch(`${API_BASE}/auth/send-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      codeSent.value = true;
+      startCountdown();
+    } else {
+      localError.value = data.error || '发送失败';
+    }
+  } catch {
+    localError.value = '网络错误，请稍后重试';
+  }
+  
+  codeSending.value = false;
+}
+
+function startCountdown() {
+  countdown.value = 60;
+  countdownTimer = setInterval(() => {
+    countdown.value--;
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer!);
+      countdownTimer = null;
+    }
+  }, 1000);
+}
 
 async function handleSubmit() {
   localError.value = '';
   
-  if (!name.value || !email.value || !password.value || !confirmPassword.value) {
+  if (!name.value || !email.value || !password.value || !confirmPassword.value || !code.value) {
     localError.value = '请填写所有字段';
     return;
   }
@@ -30,7 +81,7 @@ async function handleSubmit() {
     return;
   }
   
-  const success = await register(email.value, password.value, name.value);
+  const success = await register(email.value, password.value, name.value, code.value);
   if (success) {
     router.push('/');
   }
@@ -41,7 +92,7 @@ async function handleSubmit() {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-header">
-        <h1 class="auth-title">🔍 前端监控平台</h1>
+        <h1 class="auth-title">🛡️ Sentinel</h1>
         <p class="auth-subtitle">创建新账户</p>
       </div>
 
@@ -60,13 +111,36 @@ async function handleSubmit() {
 
         <div class="form-group">
           <label for="email">邮箱</label>
+          <div class="input-with-btn">
+            <input
+              id="email"
+              v-model="email"
+              type="email"
+              placeholder="请输入邮箱"
+              required
+              autocomplete="email"
+            />
+            <button 
+              type="button" 
+              class="send-code-btn"
+              :disabled="!canSendCode"
+              @click="sendCode"
+            >
+              {{ codeSending ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="code">验证码</label>
           <input
-            id="email"
-            v-model="email"
-            type="email"
-            placeholder="请输入邮箱"
+            id="code"
+            v-model="code"
+            type="text"
+            placeholder="请输入6位验证码"
             required
-            autocomplete="email"
+            maxlength="6"
+            autocomplete="one-time-code"
           />
         </div>
 
@@ -122,7 +196,7 @@ async function handleSubmit() {
 
 .auth-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   background: var(--card-bg);
   border-radius: 16px;
   padding: 40px;
@@ -136,7 +210,7 @@ async function handleSubmit() {
 }
 
 .auth-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 8px;
@@ -183,6 +257,37 @@ async function handleSubmit() {
 
 .form-group input::placeholder {
   color: var(--text-secondary);
+}
+
+.input-with-btn {
+  display: flex;
+  gap: 12px;
+}
+
+.input-with-btn input {
+  flex: 1;
+}
+
+.send-code-btn {
+  padding: 12px 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.send-code-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.send-code-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error-message {

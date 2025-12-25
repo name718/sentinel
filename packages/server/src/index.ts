@@ -8,6 +8,7 @@ import sourcemapRouter from './routes/sourcemap';
 import authRouter from './routes/auth';
 import alertsRouter from './routes/alerts';
 import projectsRouter from './routes/projects';
+import subscribeRouter from './routes/subscribe';
 import { authMiddleware } from './middleware/auth';
 import { initEmailFromEnv } from './services/email';
 import { initAlertTables } from './services/alert';
@@ -27,6 +28,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api', reportRouter); // SDK 上报接口保持公开
 app.use('/api', sourcemapRouter); // SourceMap 上传使用 DSN 验证
+app.use('/api', subscribeRouter); // 官网订阅接口
 
 // 受保护路由（需要认证）
 app.use('/api', authMiddleware, errorsRouter);

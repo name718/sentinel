@@ -175,6 +175,16 @@ async function createTables(client: PoolClient): Promise<void> {
     )
   `);
 
+  // 订阅者表（官网邮箱收集）
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS subscribers (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      source VARCHAR(50) DEFAULT 'website',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // 创建索引
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_dsn_timestamp ON errors(dsn, timestamp)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_errors_fingerprint ON errors(fingerprint)');

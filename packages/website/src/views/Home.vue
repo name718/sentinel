@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 const features = [
   {
     icon: '🐛',
@@ -39,6 +41,43 @@ Monitor.getInstance().init({
   reportUrl: 'https://your-server.com/api/report',
   enableSessionReplay: true,
 });`;
+
+// 订阅表单
+const email = ref('');
+const submitting = ref(false);
+const submitStatus = ref<'idle' | 'success' | 'error'>('idle');
+const submitMessage = ref('');
+
+async function handleSubscribe() {
+  if (!email.value || submitting.value) return;
+  
+  submitting.value = true;
+  submitStatus.value = 'idle';
+  
+  try {
+    const res = await fetch('http://localhost:3000/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value, source: 'website-hero' })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      submitStatus.value = 'success';
+      submitMessage.value = data.message || '订阅成功！';
+      email.value = '';
+    } else {
+      submitStatus.value = 'error';
+      submitMessage.value = data.error || '订阅失败';
+    }
+  } catch {
+    submitStatus.value = 'error';
+    submitMessage.value = '网络错误，请稍后重试';
+  }
+  
+  submitting.value = false;
+}
 </script>
 
 <template>
@@ -56,15 +95,24 @@ Monitor.getInstance().init({
           一行代码接入，实时错误追踪、性能分析、用户行为回放<br>
           帮助你快速定位问题，提升用户体验
         </p>
-        <div class="hero-actions">
-          <a href="http://localhost:5174/register" class="btn-primary">
-            免费开始使用
-            <span class="btn-arrow">→</span>
-          </a>
-          <a href="#sdk" class="btn-secondary">
-            查看文档
-          </a>
+        
+        <!-- 邮箱订阅表单 -->
+        <div class="subscribe-form">
+          <form @submit.prevent="handleSubscribe">
+            <input 
+              v-model="email"
+              type="email" 
+              placeholder="输入邮箱，获取最新动态"
+              :disabled="submitting"
+            />
+            <button type="submit" :disabled="submitting || !email">
+              {{ submitting ? '提交中...' : '立即订阅' }}
+            </button>
+          </form>
+          <p v-if="submitStatus === 'success'" class="form-message success">✓ {{ submitMessage }}</p>
+          <p v-if="submitStatus === 'error'" class="form-message error">{{ submitMessage }}</p>
         </div>
+        
         <div class="hero-stats">
           <div class="stat">
             <div class="stat-value">< 10KB</div>
@@ -174,15 +222,27 @@ Monitor.getInstance().init({
       </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta">
+    <!-- Contact / CTA Section -->
+    <section id="contact" class="cta">
       <div class="container">
-        <h2>准备好提升你的前端质量了吗？</h2>
-        <p>立即开始使用 Monitor，让问题无处遁形</p>
-        <a href="http://localhost:5174/register" class="btn-primary btn-large">
-          免费开始
-          <span class="btn-arrow">→</span>
-        </a>
+        <h2>对 Monitor 感兴趣？</h2>
+        <p>留下邮箱，我们会第一时间联系你</p>
+        
+        <div class="subscribe-form cta-form">
+          <form @submit.prevent="handleSubscribe">
+            <input 
+              v-model="email"
+              type="email" 
+              placeholder="your@email.com"
+              :disabled="submitting"
+            />
+            <button type="submit" :disabled="submitting || !email">
+              {{ submitting ? '提交中...' : '联系我' }}
+            </button>
+          </form>
+          <p v-if="submitStatus === 'success'" class="form-message success">✓ {{ submitMessage }}</p>
+          <p v-if="submitStatus === 'error'" class="form-message error">{{ submitMessage }}</p>
+        </div>
       </div>
     </section>
   </main>
@@ -247,53 +307,70 @@ Monitor.getInstance().init({
   margin: 0 auto 40px;
 }
 
-.hero-actions {
+/* Subscribe Form */
+.subscribe-form {
+  max-width: 480px;
+  margin: 0 auto 60px;
+}
+
+.subscribe-form form {
   display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 60px;
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
-  background: var(--gradient);
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  transition: all 0.3s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
-}
-
-.btn-arrow {
-  transition: transform 0.2s;
-}
-
-.btn-primary:hover .btn-arrow {
-  transform: translateX(4px);
-}
-
-.btn-secondary {
-  padding: 16px 32px;
+  gap: 12px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text);
-  transition: all 0.2s;
+  border-radius: 16px;
+  padding: 8px;
 }
 
-.btn-secondary:hover {
-  background: var(--bg-light);
-  border-color: var(--primary);
+.subscribe-form input {
+  flex: 1;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+}
+
+.subscribe-form input::placeholder {
+  color: var(--text-secondary);
+}
+
+.subscribe-form button {
+  padding: 14px 28px;
+  background: var(--gradient);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.subscribe-form button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+}
+
+.subscribe-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-message {
+  margin-top: 12px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.form-message.success {
+  color: var(--success);
+}
+
+.form-message.error {
+  color: var(--danger);
 }
 
 .hero-stats {
@@ -577,9 +654,8 @@ Monitor.getInstance().init({
   margin-bottom: 40px;
 }
 
-.btn-large {
-  padding: 20px 40px;
-  font-size: 18px;
+.cta-form {
+  margin-bottom: 0;
 }
 
 @media (max-width: 768px) {
@@ -589,9 +665,11 @@ Monitor.getInstance().init({
   .hero-desc {
     font-size: 16px;
   }
-  .hero-actions {
+  .subscribe-form form {
     flex-direction: column;
-    align-items: center;
+  }
+  .subscribe-form button {
+    width: 100%;
   }
   .hero-stats {
     flex-direction: column;

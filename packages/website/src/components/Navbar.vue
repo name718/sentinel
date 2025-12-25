@@ -28,8 +28,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll));
       </div>
 
       <div class="nav-actions">
-        <a href="http://localhost:5174/login" class="btn-login">登录</a>
-        <a href="http://localhost:5174/register" class="btn-start">免费开始</a>
+        <a href="#contact" class="btn-start">联系我们</a>
       </div>
 
       <button class="mobile-toggle" @click="mobileMenuOpen = !mobileMenuOpen">
@@ -107,18 +106,6 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll));
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.btn-login {
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: color 0.2s;
-}
-
-.btn-login:hover {
-  color: var(--text);
 }
 
 .btn-start {

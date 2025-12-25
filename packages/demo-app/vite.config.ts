@@ -10,7 +10,7 @@ export default defineConfig({
     // 生产构建时启用 SourceMap 上传
     viteSourceMapUploader({
       serverUrl: 'http://localhost:3000',
-      dsn: 'demo-app',
+      dsn: '756b3c5f06ce7b89',
       version: process.env.npm_package_version || '1.0.0',
       // 开发时可以设置为 false 方便调试
       deleteAfterUpload: true,

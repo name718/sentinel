@@ -23,6 +23,19 @@ const upload = multer({
   }
 });
 
+/** 验证 DSN 是否有效（项目存在） */
+async function validateDsn(dsn: string): Promise<boolean> {
+  const db = getDB();
+  if (!db) return false;
+  
+  try {
+    const result = await db.query('SELECT id FROM projects WHERE dsn = $1', [dsn]);
+    return result.rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** 上传单个 SourceMap */
 const uploadSingle: RequestHandler = async (req: Request, res: Response) => {
   const { dsn, version } = req.body;
@@ -38,6 +51,13 @@ const uploadSingle: RequestHandler = async (req: Request, res: Response) => {
   }
   if (!file) {
     res.status(400).json({ error: 'file is required' });
+    return;
+  }
+
+  // 验证 DSN
+  const isValidDsn = await validateDsn(dsn);
+  if (!isValidDsn) {
+    res.status(401).json({ error: 'Invalid DSN - project not found' });
     return;
   }
 
@@ -78,6 +98,13 @@ const uploadBatch: RequestHandler = async (req: Request, res: Response) => {
   }
   if (!files || files.length === 0) {
     res.status(400).json({ error: 'files are required' });
+    return;
+  }
+
+  // 验证 DSN
+  const isValidDsn = await validateDsn(dsn);
+  if (!isValidDsn) {
+    res.status(401).json({ error: 'Invalid DSN - project not found' });
     return;
   }
 

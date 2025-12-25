@@ -26,11 +26,11 @@ app.get('/api/health', (_req, res) => {
 // 公开路由（无需认证）
 app.use('/api/auth', authRouter);
 app.use('/api', reportRouter); // SDK 上报接口保持公开
+app.use('/api', sourcemapRouter); // SourceMap 上传使用 DSN 验证
 
 // 受保护路由（需要认证）
 app.use('/api', authMiddleware, errorsRouter);
 app.use('/api', authMiddleware, performanceRouter);
-app.use('/api', authMiddleware, sourcemapRouter);
 app.use('/api', authMiddleware, alertsRouter);
 app.use('/api', projectsRouter); // 项目路由（内部有 authMiddleware）
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import ErrorTrendEChart from '../components/charts/ErrorTrendEChart.vue';
 import ErrorTypePie from '../components/charts/ErrorTypePie.vue';
 import PerformanceBar from '../components/charts/PerformanceBar.vue';
@@ -51,6 +52,8 @@ const emit = defineEmits<{
   updateGroupStatus: [fingerprint: string, status: ErrorStatus];
 }>();
 
+const router = useRouter();
+
 // 计算错误类型分布
 const errorTypeData = computed(() => {
   const typeMap = new Map<string, number>();
@@ -98,6 +101,10 @@ function getTimeAgo(timestamp: number) {
   if (hours < 24) return `${hours}小时前`;
   const days = Math.floor(hours / 24);
   return `${days}天前`;
+}
+
+function goToErrorDetail(id: number) {
+  router.push(`/errors/${id}`);
 }
 </script>
 
@@ -218,7 +225,7 @@ function getTimeAgo(timestamp: number) {
               v-for="error in recentErrors" 
               :key="error.id"
               class="recent-error-item"
-              @click="$emit('viewError', error.id)"
+              @click="goToErrorDetail(error.id)"
             >
               <div class="error-type-badge">{{ error.type }}</div>
               <div class="error-content">

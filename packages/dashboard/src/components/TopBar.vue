@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import type { User } from '../composables/useAuth';
 import type { Project } from '../composables/useProject';
+import type { RefreshInterval } from '../composables/useAutoRefresh';
+import RefreshControl from './RefreshControl.vue';
 
 const props = defineProps<{
   timeRange: string;
@@ -9,13 +11,18 @@ const props = defineProps<{
   user?: User | null;
   projects: Project[];
   currentProject: Project | null;
+  refreshInterval?: RefreshInterval;
+  isRefreshing?: boolean;
+  lastRefreshTime?: Date | null;
 }>();
 
 const emit = defineEmits<{
   'update:timeRange': [range: string];
+  'update:refreshInterval': [interval: RefreshInterval];
   'toggleTheme': [];
   'logout': [];
   'switchProject': [project: Project];
+  'refresh': [];
 }>();
 
 const timeOptions = [
@@ -97,6 +104,16 @@ const platformIcons: Record<string, string> = {
     </div>
 
     <div class="topbar-right">
+      <!-- 自动刷新控制 -->
+      <RefreshControl
+        v-if="refreshInterval !== undefined"
+        :interval="refreshInterval"
+        :isRefreshing="isRefreshing || false"
+        :lastRefreshTime="lastRefreshTime || null"
+        @update:interval="$emit('update:refreshInterval', $event)"
+        @refresh="$emit('refresh')"
+      />
+      
       <div class="time-selector">
         <button
           v-for="option in timeOptions"

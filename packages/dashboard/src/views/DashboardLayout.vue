@@ -11,6 +11,7 @@ import { useErrorFilters } from '../composables/useErrorFilters';
 import { useTheme } from '../composables/useTheme';
 import { useAuth, authFetch } from '../composables/useAuth';
 import { useProject, type Project } from '../composables/useProject';
+import { useAutoRefresh, type RefreshInterval } from '../composables/useAutoRefresh';
 import { API_BASE } from '../config';
 
 const route = useRoute();
@@ -150,7 +151,25 @@ function handleRefresh() {
     fetchPerformance();
   } else {
     fetchErrors();
+    fetchErrorGroups();
   }
+}
+
+// 自动刷新
+const {
+  interval: refreshInterval,
+  isRefreshing,
+  lastRefreshTime,
+  refresh: doRefresh,
+  setInterval: setRefreshInterval,
+  startTimer,
+} = useAutoRefresh({
+  defaultInterval: 'off',
+  onRefresh: handleRefresh,
+});
+
+function handleRefreshIntervalChange(interval: RefreshInterval) {
+  setRefreshInterval(interval);
 }
 
 // 切换项目时刷新数据
@@ -187,6 +206,8 @@ onMounted(async () => {
     fetchErrors();
     fetchPerformance();
     fetchErrorGroups();
+    // 启动自动刷新定时器
+    startTimer();
   }
 });
 </script>
@@ -207,10 +228,15 @@ onMounted(async () => {
         :user="user"
         :projects="projects"
         :currentProject="currentProject"
+        :refreshInterval="refreshInterval"
+        :isRefreshing="isRefreshing"
+        :lastRefreshTime="lastRefreshTime"
         @update:timeRange="(range) => timeRange = range as typeof timeRange"
+        @update:refreshInterval="handleRefreshIntervalChange"
         @toggleTheme="toggleTheme"
         @logout="handleLogout"
         @switchProject="handleSwitchProject"
+        @refresh="doRefresh"
       />
       
       <div class="page-content">

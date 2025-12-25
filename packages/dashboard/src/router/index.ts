@@ -44,6 +44,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/ErrorsPage.vue'),
       },
       {
+        path: 'errors/:id',
+        name: 'ErrorDetail',
+        component: () => import('../views/ErrorDetailPage.vue'),
+      },
+      {
         path: 'performance',
         name: 'Performance',
         component: () => import('../views/PerformancePage.vue'),

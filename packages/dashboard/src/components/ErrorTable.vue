@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import ErrorStatusBadge from './ErrorStatusBadge.vue';
 
 interface ErrorItem {
@@ -22,8 +23,14 @@ defineEmits<{
   updateStatus: [id: number, status: 'open' | 'processing' | 'resolved' | 'ignored'];
 }>();
 
+const router = useRouter();
+
 function formatTime(timestamp: number) {
   return new Date(timestamp).toLocaleString('zh-CN');
+}
+
+function goToDetail(id: number) {
+  router.push(`/errors/${id}`);
 }
 </script>
 
@@ -62,7 +69,7 @@ function formatTime(timestamp: number) {
               <td><span class="badge badge-count">{{ err.count }}</span></td>
               <td>{{ formatTime(err.timestamp) }}</td>
               <td>
-                <button class="btn btn-sm btn-primary" @click="$emit('viewDetail', err.id)">
+                <button class="btn btn-sm btn-primary" @click="goToDetail(err.id)">
                   详情
                 </button>
               </td>

@@ -1,18 +1,52 @@
 {
-  "name": "@monitor/sdk",
+  "name": "@majuntao-1/sentinel-sdk",
   "version": "1.0.0",
-  "description": "前端监控 SDK",
+  "description": "轻量级前端监控 SDK - 错误监控、性能分析、会话回放",
+  "keywords": [
+    "monitor",
+    "frontend",
+    "error-tracking",
+    "performance",
+    "web-vitals",
+    "session-replay",
+    "rrweb",
+    "apm",
+    "sentinel"
+  ],
+  "author": "majuntao",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/name718/sentinel"
+  },
+  "homepage": "https://github.com/name718/sentinel#readme",
+  "bugs": {
+    "url": "https://github.com/name718/sentinel/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
+  "sideEffects": false,
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.5",
@@ -26,5 +60,8 @@
   "dependencies": {
     "rrweb": "2.0.0-alpha.4",
     "rrweb-snapshot": "2.0.0-alpha.4"
+  },
+  "engines": {
+    "node": ">=16"
   }
 }

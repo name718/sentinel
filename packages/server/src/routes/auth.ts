@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from '../services/password';
 import { signToken, JwtPayload } from '../services/jwt';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { sendVerificationCode, verifyCode } from '../services/verification';
+import { isLocked, recordFailure, clearAttempts } from '../services/login-limiter';
 
 const router: Router = Router();
 
@@ -158,6 +159,17 @@ router.post('/login', async (req: Request, res: Response) => {
     return res.status(400).json({ error: '邮箱和密码都是必填项' });
   }
 
+  // 检查是否被锁定
+  const lockStatus = isLocked(email);
+  if (lockStatus.locked) {
+    const minutes = Math.ceil((lockStatus.remainingMs || 0) / 60000);
+    return res.status(429).json({ 
+      error: `账户已被锁定，请${minutes}分钟后再试`,
+      locked: true,
+      remainingMinutes: minutes
+    });
+  }
+
   const db = getDB();
   if (!db) {
     return res.status(500).json({ error: '数据库未初始化' });
@@ -171,7 +183,17 @@ router.post('/login', async (req: Request, res: Response) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: '邮箱或密码错误' });
+      const failResult = recordFailure(email);
+      if (failResult.locked) {
+        return res.status(429).json({ 
+          error: `登录失败次数过多，账户已被锁定${failResult.lockMinutes}分钟`,
+          locked: true
+        });
+      }
+      return res.status(401).json({ 
+        error: '邮箱或密码错误',
+        attemptsLeft: failResult.attemptsLeft
+      });
     }
 
     const row = result.rows[0];
@@ -179,8 +201,21 @@ router.post('/login', async (req: Request, res: Response) => {
     // 验证密码
     const isValid = await verifyPassword(password, row.password_hash as string);
     if (!isValid) {
-      return res.status(401).json({ error: '邮箱或密码错误' });
+      const failResult = recordFailure(email);
+      if (failResult.locked) {
+        return res.status(429).json({ 
+          error: `登录失败次数过多，账户已被锁定${failResult.lockMinutes}分钟`,
+          locked: true
+        });
+      }
+      return res.status(401).json({ 
+        error: '邮箱或密码错误',
+        attemptsLeft: failResult.attemptsLeft
+      });
     }
+
+    // 登录成功，清除失败记录
+    clearAttempts(email);
 
     const user = formatUser(row);
 
@@ -226,6 +261,89 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('[Auth] Get me error:', error);
     res.status(500).json({ error: '获取用户信息失败' });
+  }
+});
+
+/**
+ * 发送重置密码验证码
+ * POST /api/auth/forgot-password
+ */
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: '请输入邮箱' });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: '邮箱格式不正确' });
+  }
+
+  const db = getDB();
+  if (db) {
+    // 检查邮箱是否存在
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length === 0) {
+      // 为了安全，不提示邮箱不存在
+      return res.json({ message: '如果该邮箱已注册，验证码将发送到你的邮箱' });
+    }
+  }
+
+  const result = await sendVerificationCode(email, 'reset-password');
+  
+  if (result.success) {
+    res.json({ message: result.message });
+  } else {
+    res.status(400).json({ error: result.message });
+  }
+});
+
+/**
+ * 重置密码
+ * POST /api/auth/reset-password
+ */
+router.post('/reset-password', async (req: Request, res: Response) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ error: '请填写所有字段' });
+  }
+
+  if (!isValidPassword(newPassword)) {
+    return res.status(400).json({ error: '密码至少需要8位' });
+  }
+
+  // 验证验证码
+  if (!verifyCode(email, code, 'reset-password')) {
+    return res.status(400).json({ error: '验证码错误或已过期' });
+  }
+
+  const db = getDB();
+  if (!db) {
+    return res.status(500).json({ error: '数据库未初始化' });
+  }
+
+  try {
+    // 检查用户是否存在
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    // 更新密码
+    const passwordHash = await hashPassword(newPassword);
+    await db.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE email = $2',
+      [passwordHash, email]
+    );
+
+    // 清除登录失败记录
+    clearAttempts(email);
+
+    res.json({ message: '密码重置成功，请使用新密码登录' });
+  } catch (error) {
+    console.error('[Auth] Reset password error:', error);
+    res.status(500).json({ error: '重置密码失败' });
   }
 });
 

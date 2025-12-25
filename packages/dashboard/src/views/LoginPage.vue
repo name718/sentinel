@@ -8,13 +8,17 @@ const { login, loading, error } = useAuth();
 
 const email = ref('');
 const password = ref('');
+const attemptsLeft = ref<number | null>(null);
 
 async function handleSubmit() {
   if (!email.value || !password.value) return;
+  attemptsLeft.value = null;
   
-  const success = await login(email.value, password.value);
-  if (success) {
+  const result = await login(email.value, password.value);
+  if (result.success) {
     router.push('/');
+  } else if (result.attemptsLeft !== undefined) {
+    attemptsLeft.value = result.attemptsLeft;
   }
 }
 </script>
@@ -23,7 +27,7 @@ async function handleSubmit() {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-header">
-        <h1 class="auth-title">🔍 前端监控平台</h1>
+        <h1 class="auth-title">🛡️ Sentinel</h1>
         <p class="auth-subtitle">登录您的账户</p>
       </div>
 
@@ -50,10 +54,14 @@ async function handleSubmit() {
             required
             autocomplete="current-password"
           />
+          <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
         </div>
 
         <div v-if="error" class="error-message">
           {{ error }}
+          <span v-if="attemptsLeft !== null && attemptsLeft > 0" class="attempts-hint">
+            （还剩 {{ attemptsLeft }} 次尝试机会）
+          </span>
         </div>
 
         <button type="submit" class="submit-btn" :disabled="loading">
@@ -143,6 +151,18 @@ async function handleSubmit() {
   color: var(--text-secondary);
 }
 
+.forgot-link {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
+.forgot-link:hover {
+  color: var(--primary);
+}
+
 .error-message {
   padding: 12px;
   background: rgba(239, 68, 68, 0.1);
@@ -150,6 +170,13 @@ async function handleSubmit() {
   border-radius: 8px;
   color: #ef4444;
   font-size: 14px;
+}
+
+.attempts-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .submit-btn {

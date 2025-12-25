@@ -5,6 +5,7 @@ import { isEmailConfigured } from './email';
 import nodemailer from 'nodemailer';
 
 // 验证码缓存 (生产环境应该用 Redis)
+// key 格式: `${type}:${email}`
 const codeCache = new Map<string, { code: string; expires: number }>();
 
 // 验证码配置
@@ -14,6 +15,8 @@ const RESEND_INTERVAL = 60 * 1000; // 60秒内不能重发
 
 // 发送频率限制
 const sendTimeCache = new Map<string, number>();
+
+type CodeType = 'register' | 'reset-password';
 
 /**
  * 生成随机验证码
@@ -25,9 +28,14 @@ function generateCode(): string {
 /**
  * 发送验证码邮件
  */
-export async function sendVerificationCode(email: string): Promise<{ success: boolean; message: string }> {
+export async function sendVerificationCode(
+  email: string, 
+  type: CodeType = 'register'
+): Promise<{ success: boolean; message: string }> {
+  const cacheKey = `${type}:${email}`;
+  
   // 检查发送频率
-  const lastSendTime = sendTimeCache.get(email);
+  const lastSendTime = sendTimeCache.get(cacheKey);
   if (lastSendTime && Date.now() - lastSendTime < RESEND_INTERVAL) {
     const waitSeconds = Math.ceil((RESEND_INTERVAL - (Date.now() - lastSendTime)) / 1000);
     return { success: false, message: `请${waitSeconds}秒后再试` };
@@ -37,9 +45,9 @@ export async function sendVerificationCode(email: string): Promise<{ success: bo
   if (!isEmailConfigured()) {
     // 开发模式：直接返回验证码（仅用于测试）
     const code = generateCode();
-    codeCache.set(email, { code, expires: Date.now() + CODE_EXPIRES });
-    sendTimeCache.set(email, Date.now());
-    console.log(`[Verification] Dev mode - Code for ${email}: ${code}`);
+    codeCache.set(cacheKey, { code, expires: Date.now() + CODE_EXPIRES });
+    sendTimeCache.set(cacheKey, Date.now());
+    console.log(`[Verification] Dev mode - Code for ${email} (${type}): ${code}`);
     return { success: true, message: `验证码已发送（开发模式：${code}）` };
   }
 
@@ -56,19 +64,24 @@ export async function sendVerificationCode(email: string): Promise<{ success: bo
     }
   });
 
+  const subject = type === 'register' ? '【Sentinel】邮箱验证码' : '【Sentinel】重置密码验证码';
+  const html = type === 'register' 
+    ? generateRegisterEmailHtml(code)
+    : generateResetPasswordEmailHtml(code);
+
   try {
     await transporter.sendMail({
       from: `"Sentinel" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
       to: email,
-      subject: '【Sentinel】邮箱验证码',
-      html: generateVerificationEmailHtml(code)
+      subject,
+      html
     });
 
     // 保存验证码
-    codeCache.set(email, { code, expires: Date.now() + CODE_EXPIRES });
-    sendTimeCache.set(email, Date.now());
+    codeCache.set(cacheKey, { code, expires: Date.now() + CODE_EXPIRES });
+    sendTimeCache.set(cacheKey, Date.now());
     
-    console.log(`[Verification] Code sent to ${email}`);
+    console.log(`[Verification] Code sent to ${email} (${type})`);
     return { success: true, message: '验证码已发送到你的邮箱' };
   } catch (error) {
     console.error('[Verification] Send failed:', error);
@@ -79,15 +92,16 @@ export async function sendVerificationCode(email: string): Promise<{ success: bo
 /**
  * 验证验证码
  */
-export function verifyCode(email: string, code: string): boolean {
-  const cached = codeCache.get(email);
+export function verifyCode(email: string, code: string, type: CodeType = 'register'): boolean {
+  const cacheKey = `${type}:${email}`;
+  const cached = codeCache.get(cacheKey);
   
   if (!cached) {
     return false;
   }
 
   if (Date.now() > cached.expires) {
-    codeCache.delete(email);
+    codeCache.delete(cacheKey);
     return false;
   }
 
@@ -96,14 +110,28 @@ export function verifyCode(email: string, code: string): boolean {
   }
 
   // 验证成功后删除
-  codeCache.delete(email);
+  codeCache.delete(cacheKey);
   return true;
+}
+
+/**
+ * 生成注册验证码邮件 HTML
+ */
+function generateRegisterEmailHtml(code: string): string {
+  return generateEmailHtml(code, '你正在注册 Sentinel 账户，请使用以下验证码完成验证：');
+}
+
+/**
+ * 生成重置密码验证码邮件 HTML
+ */
+function generateResetPasswordEmailHtml(code: string): string {
+  return generateEmailHtml(code, '你正在重置 Sentinel 账户密码，请使用以下验证码：');
 }
 
 /**
  * 生成验证码邮件 HTML
  */
-function generateVerificationEmailHtml(code: string): string {
+function generateEmailHtml(code: string, message: string): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -128,7 +156,7 @@ function generateVerificationEmailHtml(code: string): string {
       <h1>🛡️ Sentinel</h1>
     </div>
     <div class="content">
-      <p>你正在注册 Sentinel 账户，请使用以下验证码完成验证：</p>
+      <p>${message}</p>
       <div class="code-box">
         <div class="code">${code}</div>
       </div>

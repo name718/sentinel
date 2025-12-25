@@ -117,7 +117,7 @@ export function useAuth() {
   }
 
   /** 登录 */
-  async function login(email: string, password: string): Promise<boolean> {
+  async function login(email: string, password: string): Promise<{ success: boolean; attemptsLeft?: number }> {
     loading.value = true;
     error.value = null;
 
@@ -132,14 +132,14 @@ export function useAuth() {
 
       if (!response.ok) {
         error.value = data.error || '登录失败';
-        return false;
+        return { success: false, attemptsLeft: data.attemptsLeft };
       }
 
       setAuth(data);
-      return true;
+      return { success: true };
     } catch (e) {
       error.value = '网络错误，请稍后重试';
-      return false;
+      return { success: false };
     } finally {
       loading.value = false;
     }

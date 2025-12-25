@@ -2,8 +2,8 @@
 import { ref, onMounted } from 'vue';
 import { authFetch } from '../composables/useAuth';
 import { useProject, type Project } from '../composables/useProject';
+import { API_BASE } from '../config';
 
-const API_BASE = '/api';
 const { currentProject, switchProject, fetchProjects: refreshGlobalProjects } = useProject();
 
 const projects = ref<Project[]>([]);

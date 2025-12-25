@@ -11,8 +11,7 @@ import { useErrorFilters } from '../composables/useErrorFilters';
 import { useTheme } from '../composables/useTheme';
 import { useAuth, authFetch } from '../composables/useAuth';
 import { useProject, type Project } from '../composables/useProject';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config';
 
 const route = useRoute();
 const router = useRouter();

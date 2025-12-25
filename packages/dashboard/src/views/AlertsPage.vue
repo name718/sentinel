@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { authFetch } from '../composables/useAuth';
 import { useProject } from '../composables/useProject';
+import { API_BASE } from '../config';
 
 type AlertType = 'new_error' | 'error_threshold' | 'error_spike';
 
@@ -28,7 +29,6 @@ interface AlertHistory {
   emailSent: boolean;
 }
 
-const API_BASE = '/api';
 const { currentDsn } = useProject();
 
 const rules = ref<AlertRule[]>([]);

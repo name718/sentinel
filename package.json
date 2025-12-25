@@ -1,8 +1,14 @@
 {
-  "name": "frontend-monitor",
+  "name": "sentinel-monitor",
   "version": "1.0.0",
   "private": true,
   "description": "前端错误与异常监控系统",
+  "license": "AGPL-3.0",
+  "homepage": "https://sentinel-website-murex.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/name718/sentinel"
+  },
   "scripts": {
     "dev": "pnpm --parallel --filter @monitor/server --filter @monitor/demo-app --filter @monitor/dashboard --filter @monitor/sdk dev",
     "dev:sdk": "pnpm --filter @monitor/sdk dev",

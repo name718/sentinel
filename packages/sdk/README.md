@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@majuntao-1/sentinel-sdk.svg)](https://www.npmjs.com/package/@majuntao-1/sentinel-sdk)
 [![npm downloads](https://img.shields.io/npm/dm/@majuntao-1/sentinel-sdk.svg)](https://www.npmjs.com/package/@majuntao-1/sentinel-sdk)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-red.svg)](LICENSE)
 
 ## ✨ 特性
 
@@ -178,7 +178,7 @@ SDK 会自动采集以下数据：
 
 ## 📄 License
 
-[MIT](LICENSE)
+[AGPL-3.0](LICENSE) - 禁止商业用途
 
 ## 🔗 相关链接
 

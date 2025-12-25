@@ -52,7 +52,7 @@
       </div>
       
       <div class="footer-bottom">
-        <p>© 2025 Sentinel. 开源项目，MIT 许可证</p>
+        <p>© 2025 Sentinel. 开源项目，AGPL-3.0 许可证（禁止商用）</p>
         <p class="made-with">Made with 💜 for developers</p>
       </div>
     </div>

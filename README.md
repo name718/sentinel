@@ -1,11 +1,14 @@
-# 🔍 Sentinel 前端监控平台
+# �️ Setntinel 前端监控平台
 
 > 一站式前端应用监控解决方案，帮助开发团队快速发现、定位和解决线上问题。
+
+🌐 **官网**: [https://sentinel-website-murex.vercel.app](https://sentinel-website-murex.vercel.app)  
+📊 **在线演示**: [https://sentinel-dashboard-tau.vercel.app](https://sentinel-dashboard-tau.vercel.app)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![Vue](https://img.shields.io/badge/Vue-3.4-green)
 ![Node](https://img.shields.io/badge/Node-18+-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![License](https://img.shields.io/badge/License-AGPL--3.0-red)
 
 ## ✨ 核心特性
 
@@ -16,6 +19,7 @@
 - 📊 **智能聚合** - 相似错误自动归类，避免告警轰炸
 - 🔔 **告警通知** - 支持邮件告警，新错误/阈值/激增多种规则
 - 🚀 **Web Worker 上报** - 数据处理不阻塞主线程，零性能影响
+- 🔐 **企业级安全** - JWT 认证、邮箱验证码、登录失败限制
 
 ## 🚀 快速开始
 
@@ -28,8 +32,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/sentinel-monitor.git
-cd sentinel-monitor
+git clone https://github.com/name718/sentinel.git
+cd sentinel
 ```
 
 ### 2. 安装依赖
@@ -41,19 +45,12 @@ pnpm install
 ### 3. 配置环境变量
 
 ```bash
-# 复制环境变量模板
 cp packages/server/.env.example packages/server/.env.local
-
-# 编辑配置文件
-vim packages/server/.env.local
 ```
 
 必填配置：
 ```env
-# 数据库连接 (Neon PostgreSQL)
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
-
-# JWT 密钥 (随机字符串)
 JWT_SECRET=your-random-secret-key
 ```
 
@@ -63,43 +60,32 @@ SMTP_HOST=smtp.qq.com
 SMTP_PORT=465
 SMTP_USER=your-email@qq.com
 SMTP_PASS=your-smtp-password
-SMTP_FROM=your-email@qq.com
 ```
 
 ### 4. 启动服务
 
 ```bash
-# 方式一：分别启动（推荐开发时使用）
-pnpm dev:server          # 后端服务 → http://localhost:3000
-pnpm dev:demo            # 演示应用 → http://localhost:5173
-pnpm dev:dashboard       # 管理后台 → http://localhost:5174
-
-# 方式二：同时启动所有服务
 pnpm dev
 ```
 
-### 5. 访问应用
-
-| 服务 | 地址 | 说明 |
-|------|------|------|
-| 演示应用 | http://localhost:5173 | 触发错误、测试 SDK |
-| 管理后台 | http://localhost:5174 | 查看监控数据 |
-| API 服务 | http://localhost:3000 | 后端接口 |
-
-首次访问管理后台需要注册账号。
+| 服务 | 地址 |
+|------|------|
+| 演示应用 | http://localhost:5173 |
+| 管理后台 | http://localhost:5174 |
+| API 服务 | http://localhost:3000 |
 
 ## 📦 项目结构
 
 ```
-sentinel-monitor/
+sentinel/
 ├── packages/
-│   ├── sdk/              # 前端监控 SDK
+│   ├── sdk/              # 前端监控 SDK (@majuntao-1/sentinel-sdk)
 │   ├── server/           # 后端服务 (Express + PostgreSQL)
 │   ├── dashboard/        # 管理后台 (Vue 3 + ECharts)
+│   ├── website/          # 官网
 │   ├── demo-app/         # 演示应用
 │   ├── plugins/          # Vite/Webpack 插件
 │   └── vscode-extension/ # VSCode 扩展
-├── docs/                 # 文档
 └── README.md
 ```
 
@@ -108,128 +94,49 @@ sentinel-monitor/
 ### 安装
 
 ```bash
-npm install @monitor/sdk
-# 或
-pnpm add @monitor/sdk
+npm install @majuntao-1/sentinel-sdk
 ```
 
-### 基础使用
+### 使用
 
 ```typescript
-import { Monitor } from '@monitor/sdk';
+import { Monitor } from '@majuntao-1/sentinel-sdk';
 
 const monitor = Monitor.getInstance();
 monitor.init({
-  dsn: 'your-project-id',
+  dsn: 'your-project-dsn',
   reportUrl: 'https://your-server.com/api/report',
-  sampleRate: 1,              // 采样率 0-1
-  enableSessionReplay: true,  // 启用会话录制
-  useWorker: true,            // 使用 Web Worker 上报（默认开启）
+  enableSessionReplay: true,
 });
-
-// 设置用户信息
-monitor.setUser({
-  id: 'user-123',
-  username: 'test',
-  email: 'test@example.com'
-});
-
-// 手动捕获错误
-monitor.captureError(new Error('Something went wrong'));
 ```
 
-### 配置项
-
-| 配置 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| dsn | string | - | 项目标识（必填） |
-| reportUrl | string | - | 上报地址（必填） |
-| sampleRate | number | 1 | 全局采样率 0-1 |
-| errorSampleRate | number | - | 错误采样率 |
-| performanceSampleRate | number | - | 性能采样率 |
-| maxBreadcrumbs | number | 20 | 最大行为记录数 |
-| batchSize | number | 10 | 批量上报阈值 |
-| reportInterval | number | 5000 | 上报间隔(ms) |
-| useWorker | boolean | true | 使用 Web Worker |
-| enableSessionReplay | boolean | false | 启用会话录制 |
-| ignoreErrors | RegExp[] | - | 忽略的错误 |
-| ignoreUrls | RegExp[] | - | 忽略的 URL |
-
-## 📊 功能截图
-
-### 监控概览
-- 错误趋势图
-- 性能指标卡片
-- 错误分组列表
-
-### 错误详情
-- 完整堆栈信息
-- SourceMap 还原
-- 用户行为轨迹
-- 会话回放
-
-### 性能分析
-- Web Vitals 评分
-- 资源加载瀑布图
-- 长任务分析
-
-### 告警配置
-- 新错误告警
-- 阈值告警
-- 激增告警
-- 邮件通知
-
-## 🛠️ 开发命令
-
-```bash
-# 安装依赖
-pnpm install
-
-# 开发模式
-pnpm dev              # 启动所有服务
-pnpm dev:server       # 仅启动后端
-pnpm dev:demo         # 仅启动演示应用
-pnpm dev:dashboard    # 仅启动管理后台
-
-# 构建
-pnpm build            # 构建所有包
-pnpm --filter @monitor/sdk build    # 构建 SDK
-
-# 测试
-pnpm test             # 运行测试
-pnpm --filter @monitor/sdk test     # 测试 SDK
-
-# 代码检查
-pnpm lint             # ESLint 检查
-```
+详细文档请访问 [SDK README](packages/sdk/README.md)
 
 ## 🏗️ 技术栈
 
 | 模块 | 技术 |
 |------|------|
 | SDK | TypeScript, Web Worker, rrweb |
-| Server | Express, PostgreSQL, Nodemailer |
-| Dashboard | Vue 3, Vite, ECharts, TailwindCSS |
-| Plugins | Vite Plugin, Webpack Plugin |
-| VSCode | VSCode Extension API |
+| Server | Express, PostgreSQL, JWT, Nodemailer |
+| Dashboard | Vue 3, Vite, ECharts |
+| Website | Vue 3, Vite |
 
-## 📝 更新日志
+## 📄 License
 
-### v1.0.0 (2024-12)
-- ✅ 错误监控 (JS/Promise/资源)
-- ✅ 性能监控 (Web Vitals)
-- ✅ 会话录制 (rrweb)
-- ✅ SourceMap 解析
-- ✅ 智能错误聚合
-- ✅ 邮件告警系统
-- ✅ 错误状态管理
-- ✅ Web Worker 上报优化
-- ✅ 用户认证 (JWT)
+本项目采用 [AGPL-3.0](LICENSE) 协议，附加商业使用限制。
+
+**⚠️ 重要提示：**
+- ✅ 允许个人学习、研究使用
+- ✅ 允许非商业项目使用（需保留署名）
+- ❌ **禁止商业用途**（包括但不限于：出售、作为付费服务、用于盈利）
+- ❌ 禁止去除版权声明
+
+如需商业授权，请联系项目维护者。
 
 ## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📄 License
+---
 
-[MIT](LICENSE)
+Made with ❤️ by Sentinel Team

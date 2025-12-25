@@ -377,6 +377,8 @@ async function handleSubscribe() {
                 {{ submitting ? '提交中...' : '订阅' }}
               </button>
             </form>
+            <p v-if="submitStatus === 'success'" class="form-message success">✓ {{ submitMessage }}</p>
+            <p v-if="submitStatus === 'error'" class="form-message error">{{ submitMessage }}</p>
           </div>
         </div>
       </div>

@@ -210,3 +210,107 @@ export async function sendTestEmail(to: string): Promise<boolean> {
 export function isEmailConfigured(): boolean {
   return transporter !== null;
 }
+
+/**
+ * 发送欢迎邮件给新订阅者
+ */
+export async function sendWelcomeEmail(to: string): Promise<boolean> {
+  if (!transporter || !emailConfig) {
+    console.warn('[Email] Service not initialized');
+    return false;
+  }
+
+  const html = generateWelcomeEmailHtml();
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Sentinel" <${emailConfig.from}>`,
+      to,
+      subject: '🎉 欢迎订阅 Sentinel！',
+      html
+    });
+    console.log('[Email] Welcome email sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send welcome email:', error);
+    return false;
+  }
+}
+
+/**
+ * 生成欢迎邮件 HTML
+ */
+function generateWelcomeEmailHtml(): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #1e293b; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+    .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 40px 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; color: white; }
+    .header p { margin: 12px 0 0; color: rgba(255,255,255,0.9); font-size: 16px; }
+    .content { padding: 32px 24px; color: #e2e8f0; }
+    .content h2 { color: white; font-size: 20px; margin: 0 0 16px; }
+    .content p { line-height: 1.7; margin: 0 0 16px; }
+    .features { background: #334155; border-radius: 12px; padding: 20px; margin: 24px 0; }
+    .feature { display: flex; align-items: flex-start; margin-bottom: 16px; }
+    .feature:last-child { margin-bottom: 0; }
+    .feature-icon { font-size: 20px; margin-right: 12px; }
+    .feature-text { flex: 1; }
+    .feature-title { color: white; font-weight: 600; margin-bottom: 4px; }
+    .feature-desc { font-size: 14px; color: #94a3b8; }
+    .cta { text-align: center; margin: 32px 0; }
+    .cta a { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+    .footer { padding: 24px; background: #0f172a; text-align: center; font-size: 13px; color: #64748b; }
+    .footer a { color: #6366f1; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🛡️ Sentinel</h1>
+      <p>感谢订阅，欢迎加入！</p>
+    </div>
+    <div class="content">
+      <h2>你已成功订阅 Sentinel 更新</h2>
+      <p>我们会在以下情况通知你：</p>
+      
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">🚀</span>
+          <div class="feature-text">
+            <div class="feature-title">新版本发布</div>
+            <div class="feature-desc">第一时间获取 SDK 和平台的最新功能</div>
+          </div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">📚</span>
+          <div class="feature-text">
+            <div class="feature-title">技术文章</div>
+            <div class="feature-desc">前端监控最佳实践和技术分享</div>
+          </div>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🎁</span>
+          <div class="feature-text">
+            <div class="feature-title">专属福利</div>
+            <div class="feature-desc">订阅用户专享优惠和早期体验资格</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta">
+        <a href="https://github.com/name718/sentinel">访问 GitHub 仓库</a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>此邮件由 Sentinel 自动发送</p>
+      <p>如有问题，请访问 <a href="https://github.com/name718/sentinel">GitHub</a> 提交 Issue</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}

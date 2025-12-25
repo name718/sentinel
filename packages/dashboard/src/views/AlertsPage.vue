@@ -234,7 +234,7 @@ onMounted(() => {
     <h1 class="page-title">🔔 告警配置</h1>
 
     <!-- 邮件服务状态 -->
-    <div class="status-card" :class="{ connected: emailStatus.connected }">
+    <div v-if="false" class="status-card" :class="{ connected: emailStatus.connected }">
       <div class="status-icon">{{ emailStatus.connected ? '✅' : '⚠️' }}</div>
       <div class="status-content">
         <div class="status-title">

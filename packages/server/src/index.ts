@@ -9,6 +9,7 @@ import authRouter from './routes/auth';
 import alertsRouter from './routes/alerts';
 import projectsRouter from './routes/projects';
 import subscribeRouter from './routes/subscribe';
+import docsRouter from './routes/docs';
 import { authMiddleware } from './middleware/auth';
 import { initEmailFromEnv } from './services/email';
 import { initAlertTables } from './services/alert';
@@ -19,10 +20,13 @@ const app: Express = express();
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
-// 健康检查
+// 健康检查（公开）
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
+
+// API 文档（公开）
+app.use('/api', docsRouter);
 
 // 公开路由（无需认证）
 app.use('/api/auth', authRouter);

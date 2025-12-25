@@ -4,6 +4,7 @@
  */
 import { ref, computed, watch } from 'vue';
 import { authFetch } from './useAuth';
+import { API_BASE } from '../config';
 
 export interface Project {
   id: number;
@@ -19,7 +20,6 @@ export interface Project {
 }
 
 const STORAGE_KEY = 'monitor_current_project';
-const API_BASE = '/api';
 
 // 全局状态
 const projects = ref<Project[]>([]);

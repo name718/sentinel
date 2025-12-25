@@ -2,6 +2,7 @@
  * 认证状态管理 Composable
  */
 import { ref, computed } from 'vue';
+import { API_BASE } from '../config';
 
 const TOKEN_KEY = 'monitor-auth-token';
 const USER_KEY = 'monitor-auth-user';
@@ -31,8 +32,6 @@ const user = ref<User | null>(
 );
 const loading = ref(false);
 const error = ref<string | null>(null);
-
-const API_BASE = '/api';
 
 /**
  * 全局 API 请求封装，自动处理 401

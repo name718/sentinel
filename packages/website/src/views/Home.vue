@@ -2,12 +2,18 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 
 const features = [
-  { icon: '🐛', title: '错误监控', desc: '自动捕获 JS 错误、Promise 异常、资源加载失败，支持 SourceMap 还原' },
-  { icon: '⚡', title: '性能分析', desc: 'Core Web Vitals 指标采集，FCP/LCP/FID/CLS 全覆盖，资源加载瀑布图' },
-  { icon: '🎬', title: '会话回放', desc: '录制用户操作轨迹，错误发生时自动保存回放，快速定位问题' },
-  { icon: '🔔', title: '智能告警', desc: '新错误、错误激增、阈值告警，邮件通知，冷却机制防止轰炸' },
-  { icon: '📦', title: '多项目管理', desc: '一个平台管理多个应用，团队协作，成员权限控制' },
-  { icon: '🔧', title: '构建集成', desc: 'Vite/Webpack 插件，构建时自动上传 SourceMap，零配置接入' }
+  { icon: '🐛', title: '错误监控', desc: '自动捕获 JS 错误、Promise 异常、资源加载失败，智能聚合相似错误' },
+  { icon: '⚡', title: '性能分析', desc: 'Core Web Vitals 全覆盖 (FCP/LCP/FID/CLS/TTFB)，资源加载瀑布图' },
+  { icon: '🎬', title: '会话回放', desc: '基于 rrweb 录制用户操作，完整还原错误现场，快速定位问题' },
+  { icon: '🗺️', title: 'SourceMap 解析', desc: '自动还原压缩代码到源码位置，精准定位错误行号' },
+  { icon: '🔔', title: '智能告警', desc: '新错误、阈值、激增多种告警规则，邮件通知，冷却机制防轰炸' },
+  { icon: '🚀', title: 'Web Worker', desc: '数据处理不阻塞主线程，零性能影响，批量上报优化' },
+  { icon: '📦', title: '多项目管理', desc: '一个平台管理多个应用，项目隔离，独立 DSN 标识' },
+  { icon: '🔧', title: '构建插件', desc: 'Vite/Webpack 插件，构建时自动上传 SourceMap，零配置接入' },
+  { icon: '👤', title: '用户追踪', desc: '关联用户信息，追踪用户行为轨迹，面包屑记录' },
+  { icon: '📊', title: '数据可视化', desc: 'ECharts 图表展示，错误趋势、性能评分、资源分析' },
+  { icon: '🔐', title: '安全认证', desc: 'JWT 身份认证，项目权限控制，数据安全隔离' },
+  { icon: '💻', title: 'VSCode 插件', desc: '在编辑器中直接查看错误，一键跳转源码位置' }
 ];
 
 const codeExample = `import { Monitor } from '@anthropic/sentinel';
@@ -269,6 +275,39 @@ async function handleSubscribe() {
             </div>
             <pre><code>{{ codeExample }}</code></pre>
             <div class="code-glow"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section class="tech-stack">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">技术架构</span>
+          <h2>现代化<span class="gradient-text">技术栈</span></h2>
+          <p>基于主流技术构建，开箱即用</p>
+        </div>
+        <div class="tech-grid">
+          <div class="tech-item glass-card">
+            <div class="tech-icon">📦</div>
+            <div class="tech-name">SDK</div>
+            <div class="tech-desc">TypeScript + Web Worker + rrweb</div>
+          </div>
+          <div class="tech-item glass-card">
+            <div class="tech-icon">🖥️</div>
+            <div class="tech-name">Server</div>
+            <div class="tech-desc">Express + PostgreSQL + JWT</div>
+          </div>
+          <div class="tech-item glass-card">
+            <div class="tech-icon">📊</div>
+            <div class="tech-name">Dashboard</div>
+            <div class="tech-desc">Vue 3 + Vite + ECharts</div>
+          </div>
+          <div class="tech-item glass-card">
+            <div class="tech-icon">🔌</div>
+            <div class="tech-name">Plugins</div>
+            <div class="tech-desc">Vite Plugin + Webpack Plugin</div>
           </div>
         </div>
       </div>
@@ -748,12 +787,12 @@ async function handleSubscribe() {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
 .feature-card {
-  padding: 36px;
+  padding: 28px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -812,15 +851,15 @@ async function handleSubscribe() {
 }
 
 .feature-card h3 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .feature-card p {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
 .feature-arrow {
@@ -991,6 +1030,46 @@ async function handleSubscribe() {
   height: 200px;
   background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%);
   filter: blur(40px);
+}
+
+/* Tech Stack */
+.tech-stack {
+  padding: 140px 0;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.03) 0%, transparent 100%);
+}
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.tech-item {
+  padding: 32px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.tech-item:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.tech-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+
+.tech-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.tech-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 /* Pricing */
@@ -1165,6 +1244,11 @@ async function handleSubscribe() {
 }
 
 /* 响应式 */
+@media (max-width: 1200px) {
+  .features-grid { grid-template-columns: repeat(3, 1fr); }
+  .tech-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 1024px) {
   .features-grid { grid-template-columns: repeat(2, 1fr); }
   .sdk-content { grid-template-columns: 1fr; gap: 48px; }
@@ -1176,6 +1260,7 @@ async function handleSubscribe() {
   .subscribe-form form { flex-direction: column; }
   .hero-stats { flex-direction: column; gap: 16px; }
   .features-grid { grid-template-columns: 1fr; }
+  .tech-grid { grid-template-columns: 1fr; }
   .pricing-grid { grid-template-columns: 1fr; }
   .section-header h2 { font-size: 36px; }
   .sdk-info h2 { font-size: 36px; }

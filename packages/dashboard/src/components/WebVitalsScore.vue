@@ -1,16 +1,24 @@
 <script setup lang="ts">
+type VitalsRating = 'good' | 'needs-improvement' | 'poor' | null;
+
 interface WebVitalsScore {
-  fcp: 'good' | 'needs-improvement' | 'poor' | null;
-  lcp: 'good' | 'needs-improvement' | 'poor' | null;
-  fid: 'good' | 'needs-improvement' | 'poor' | null;
-  cls: 'good' | 'needs-improvement' | 'poor' | null;
-  ttfb: 'good' | 'needs-improvement' | 'poor' | null;
+  fcp: VitalsRating;
+  lcp: VitalsRating;
+  /** @deprecated FID 已被 INP 替代 */
+  fid: VitalsRating;
+  /** INP (Interaction to Next Paint) - 2024年3月起替代 FID */
+  inp: VitalsRating;
+  cls: VitalsRating;
+  ttfb: VitalsRating;
 }
 
 interface PerformanceData {
   fcp?: number;
   lcp?: number;
+  /** @deprecated FID 已被 INP 替代 */
   fid?: number;
+  /** INP (Interaction to Next Paint) */
+  inp?: number;
   cls?: number;
   ttfb?: number;
   webVitalsScore?: WebVitalsScore;
@@ -38,12 +46,12 @@ const metrics = [
     thresholds: { good: 2500, poor: 4000 }
   },
   {
-    key: 'fid',
-    name: 'FID',
-    fullName: 'First Input Delay',
-    description: '首次输入延迟',
+    key: 'inp',
+    name: 'INP',
+    fullName: 'Interaction to Next Paint',
+    description: '交互到下一次绘制（Core Web Vital）',
     unit: 'ms',
-    thresholds: { good: 100, poor: 300 }
+    thresholds: { good: 200, poor: 500 }
   },
   {
     key: 'cls',
@@ -60,6 +68,19 @@ const metrics = [
     description: '首字节时间',
     unit: 'ms',
     thresholds: { good: 800, poor: 1800 }
+  }
+];
+
+// FID 已废弃，但保留用于向后兼容
+const deprecatedMetrics = [
+  {
+    key: 'fid',
+    name: 'FID',
+    fullName: 'First Input Delay',
+    description: '首次输入延迟（已废弃，被 INP 替代）',
+    unit: 'ms',
+    thresholds: { good: 100, poor: 300 },
+    deprecated: true
   }
 ];
 

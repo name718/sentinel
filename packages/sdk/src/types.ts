@@ -174,13 +174,19 @@ export interface ResourceTiming {
   cached?: boolean;
 }
 
+/** Web Vitals 评分等级 */
+export type VitalsRating = 'good' | 'needs-improvement' | 'poor' | null;
+
 /** Core Web Vitals 评分 */
 export interface WebVitalsScore {
-  fcp: 'good' | 'needs-improvement' | 'poor' | null;
-  lcp: 'good' | 'needs-improvement' | 'poor' | null;
-  fid: 'good' | 'needs-improvement' | 'poor' | null;
-  cls: 'good' | 'needs-improvement' | 'poor' | null;
-  ttfb: 'good' | 'needs-improvement' | 'poor' | null;
+  fcp: VitalsRating;
+  lcp: VitalsRating;
+  /** @deprecated FID 已被 INP 替代，将在未来版本移除 */
+  fid: VitalsRating;
+  /** INP (Interaction to Next Paint) - 2024年3月起替代 FID 成为 Core Web Vitals */
+  inp: VitalsRating;
+  cls: VitalsRating;
+  ttfb: VitalsRating;
 }
 
 /** 性能数据 */
@@ -188,7 +194,10 @@ export interface PerformanceData {
   fp?: number;
   fcp?: number;
   lcp?: number;
+  /** @deprecated FID 已被 INP 替代，将在未来版本移除 */
   fid?: number;
+  /** INP (Interaction to Next Paint) - 衡量页面整体交互响应性 */
+  inp?: number;
   cls?: number;
   ttfb?: number;
   domReady?: number;

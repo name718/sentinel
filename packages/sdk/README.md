@@ -9,7 +9,7 @@
 ## ✨ 特性
 
 - 🐛 **错误监控** - 自动捕获 JS 错误、Promise 异常、资源加载失败
-- ⚡ **性能监控** - Core Web Vitals (FCP/LCP/FID/CLS/TTFB)
+- ⚡ **性能监控** - Core Web Vitals (FCP/LCP/INP/CLS/TTFB)
 - 🎬 **会话回放** - 基于 rrweb 录制用户操作
 - 🚀 **Web Worker** - 数据处理不阻塞主线程
 - 📦 **轻量级** - < 10KB gzipped (不含 rrweb)
@@ -156,12 +156,14 @@ SDK 会自动采集以下数据：
 - 网络请求错误
 
 ### 性能数据
-- FCP (First Contentful Paint)
-- LCP (Largest Contentful Paint)
-- FID (First Input Delay)
-- CLS (Cumulative Layout Shift)
-- TTFB (Time to First Byte)
+- FCP (First Contentful Paint) - 首次内容绘制
+- LCP (Largest Contentful Paint) - 最大内容绘制
+- INP (Interaction to Next Paint) - 交互到下一次绘制 ⭐ 新增
+- CLS (Cumulative Layout Shift) - 累积布局偏移
+- TTFB (Time to First Byte) - 首字节时间
+- FID (First Input Delay) - 首次输入延迟 ⚠️ 已废弃，被 INP 替代
 - 资源加载时间
+- 长任务监控
 
 ### 用户行为
 - 点击事件

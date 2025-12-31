@@ -1,6 +1,7 @@
 {
   "name": "@majuntao-1/sentinel-sdk",
   "version": "1.0.0",
+  "type": "module",
   "description": "轻量级前端监控 SDK - 错误监控、性能分析、会话回放",
   "keywords": [
     "monitor",

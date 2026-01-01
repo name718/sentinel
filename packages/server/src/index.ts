@@ -1,5 +1,6 @@
 import express, { Express } from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import { initDB } from './db';
 import reportRouter from './routes/report';
 import errorsRouter from './routes/errors';
@@ -10,15 +11,19 @@ import alertsRouter from './routes/alerts';
 import projectsRouter from './routes/projects';
 import subscribeRouter from './routes/subscribe';
 import docsRouter from './routes/docs';
+import websocketRouter from './routes/websocket';
 import { authMiddleware } from './middleware/auth';
 import { initEmailFromEnv } from './services/email';
 import { initAlertTables } from './services/alert';
+import { websocketService } from './services/websocket';
 
 const app: Express = express();
+const server = createServer(app);
 
 // 中间件
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
+app.use(express.static('public')); // 添加静态文件服务
 
 // 健康检查（公开）
 app.get('/api/health', (_req, res) => {
@@ -38,6 +43,7 @@ app.use('/api', subscribeRouter); // 官网订阅接口
 app.use('/api', authMiddleware, errorsRouter);
 app.use('/api', authMiddleware, performanceRouter);
 app.use('/api', authMiddleware, alertsRouter);
+app.use('/api', authMiddleware, websocketRouter);
 app.use('/api', projectsRouter); // 项目路由（内部有 authMiddleware）
 
 const PORT = process.env.PORT || 3000;
@@ -50,8 +56,12 @@ initDB().then(async () => {
   // 初始化邮件服务
   initEmailFromEnv();
   
-  app.listen(PORT, () => {
+  // 初始化 WebSocket 服务
+  websocketService.init(server);
+  
+  server.listen(PORT, () => {
     console.log(`[Server] Running on http://localhost:${PORT}`);
+    console.log(`[WebSocket] Available at ws://localhost:${PORT}/ws`);
   });
 }).catch((err) => {
   console.error('[Server] Failed to initialize database:', err);

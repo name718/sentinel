@@ -5,6 +5,7 @@ import { Router, Request, Response } from 'express';
 import { getDB } from '../db';
 import { generateFingerprint } from '../services/error-aggregation';
 import { checkAndTriggerAlerts } from '../services/alert';
+import { websocketService } from '../services/websocket';
 import { Pool } from 'pg';
 
 const router: Router = Router();
@@ -116,11 +117,13 @@ async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise
   
   const isNew = existing.rows.length === 0;
   let count = 1;
+  let errorId: number;
   
   if (!isNew) {
     // 更新计数和最后出现时间
     const { id, count: existingCount } = existing.rows[0];
     count = existingCount + 1;
+    errorId = id;
     await db.query(
       'UPDATE errors SET count = $1, timestamp = $2, breadcrumbs = $3, session_replay = $4 WHERE id = $5',
       [
@@ -134,9 +137,10 @@ async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise
     console.log(`[Report] 错误聚合: fingerprint=${fingerprint}, count=${count}`);
   } else {
     // 插入新记录
-    await db.query(`
+    const result = await db.query(`
       INSERT INTO errors (dsn, type, message, stack, filename, lineno, colno, url, breadcrumbs, session_replay, timestamp, fingerprint, normalized_message)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING id
     `, [
       dsn,
       event.type,
@@ -152,7 +156,40 @@ async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise
       fingerprint,
       normalizedMessage
     ]);
+    errorId = result.rows[0].id;
     console.log(`[Report] 新错误: fingerprint=${fingerprint}, type=${event.type}`);
+  }
+
+  // 🚀 WebSocket 实时推送
+  try {
+    const websocketMessage = {
+      type: 'error' as const,
+      data: {
+        id: errorId,
+        type: event.type,
+        message: event.message,
+        stack: event.stack,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        url: event.url,
+        fingerprint,
+        normalizedMessage,
+        count,
+        isNew,
+        timestamp: event.timestamp,
+        breadcrumbs: event.breadcrumbs,
+        sessionReplay: event.sessionReplay
+      },
+      dsn,
+      timestamp: Date.now()
+    };
+    
+    websocketService.broadcast(dsn, websocketMessage);
+    console.log(`[Report] WebSocket 推送: ${isNew ? '新错误' : '错误更新'} - ${event.type}`);
+  } catch (wsError) {
+    console.error('[Report] WebSocket 推送失败:', wsError);
+    // WebSocket 推送失败不影响数据保存
   }
 
   // 检查并触发告警
@@ -169,9 +206,10 @@ async function saveErrorEvent(db: Pool, dsn: string, event: ErrorEvent): Promise
 
 /** 保存性能数据 */
 async function savePerformanceData(db: Pool, dsn: string, data: PerformanceData): Promise<void> {
-  await db.query(`
+  const result = await db.query(`
     INSERT INTO performance (dsn, fp, fcp, lcp, fid, cls, ttfb, dom_ready, load, long_tasks, resources, web_vitals_score, url, timestamp)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    RETURNING id
   `, [
     dsn,
     data.fp ?? null,
@@ -188,6 +226,39 @@ async function savePerformanceData(db: Pool, dsn: string, data: PerformanceData)
     data.url,
     data.timestamp
   ]);
+
+  const performanceId = result.rows[0].id;
+
+  // 🚀 WebSocket 实时推送性能数据
+  try {
+    const websocketMessage = {
+      type: 'performance' as const,
+      data: {
+        id: performanceId,
+        fp: data.fp,
+        fcp: data.fcp,
+        lcp: data.lcp,
+        fid: data.fid,
+        cls: data.cls,
+        ttfb: data.ttfb,
+        domReady: data.domReady,
+        load: data.load,
+        longTasks: data.longTasks,
+        resources: data.resources,
+        webVitalsScore: data.webVitalsScore,
+        url: data.url,
+        timestamp: data.timestamp
+      },
+      dsn,
+      timestamp: Date.now()
+    };
+    
+    websocketService.broadcast(dsn, websocketMessage);
+    console.log(`[Report] WebSocket 推送: 性能数据 - ${data.url}`);
+  } catch (wsError) {
+    console.error('[Report] WebSocket 推送失败:', wsError);
+    // WebSocket 推送失败不影响数据保存
+  }
 }
 
 export default router;

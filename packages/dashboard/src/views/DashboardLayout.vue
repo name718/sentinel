@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar.vue';
 import TopBar from '../components/TopBar.vue';
 import ErrorDetailModal from '../components/ErrorDetailModal.vue';
 import SessionCompare from '../components/SessionCompare.vue';
+import RealtimeNotifications from '../components/RealtimeNotifications.vue';
 import { useErrorData } from '../composables/useErrorData';
 import { usePerformanceData } from '../composables/usePerformanceData';
 import { useErrorFilters } from '../composables/useErrorFilters';
@@ -12,6 +13,7 @@ import { useTheme } from '../composables/useTheme';
 import { useAuth, authFetch } from '../composables/useAuth';
 import { useProject, type Project } from '../composables/useProject';
 import { useAutoRefresh, type RefreshInterval } from '../composables/useAutoRefresh';
+import { useRealtimeData } from '../composables/useRealtimeData';
 import { API_BASE } from '../config';
 
 const route = useRoute();
@@ -168,6 +170,9 @@ const {
   onRefresh: handleRefresh,
 });
 
+// 实时数据更新
+const { onDataUpdate } = useRealtimeData();
+
 function handleRefreshIntervalChange(interval: RefreshInterval) {
   setRefreshInterval(interval);
 }
@@ -209,6 +214,18 @@ onMounted(async () => {
     // 启动自动刷新定时器
     startTimer();
   }
+  
+  // 注册实时数据更新回调
+  onDataUpdate('error', () => {
+    // 错误数据更新时刷新错误相关数据
+    fetchErrors();
+    fetchErrorGroups();
+  });
+  
+  onDataUpdate('performance', () => {
+    // 性能数据更新时刷新性能数据
+    fetchPerformance();
+  });
 });
 </script>
 
@@ -328,6 +345,9 @@ onMounted(async () => {
       @close="closeSessionCompare"
       @viewSession="viewSessionDetail"
     />
+    
+    <!-- 实时通知组件 -->
+    <RealtimeNotifications v-if="currentProject" />
   </div>
 </template>
 
